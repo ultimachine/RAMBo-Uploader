@@ -1,0 +1,10 @@
+32u2 upload command:
+$ avrdude -v -v -p atmega32u2 -c avrispmkII -P usb: -e -Ulock:w:0x0F:m -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -U ./RAMBo-usbserial-DFU-combined-32u2.HEX
+
+2560 upload command:
+$ avrdude -v -v -p m2560 -c avrispmkII -P usb: -e -Ulock:w:0x0F:m -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -U ./stk500boot_v2_mega2560.hex 
+
+-You might need to be super user.
+-The last -U flag is the location of the hex file you want to upload. 
+
+000200149639 avrisp
