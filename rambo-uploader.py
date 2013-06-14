@@ -49,12 +49,12 @@ class AboutBox(wx.Dialog):
 class atmega():
 	"atmega properties to pass to avrdude"
 	def __init__(self):
-		self.name = "m2560"
-		self.lockBits = "0x0F"
-		self.extFuse = "0xFD"
-		self.highFuse = "0xD0"
-		self.lowFuse = "0xFF"
-		self.bootloader = "./stk500boot_v2_mega2560.hex"
+		self.name = ""
+		self.lockBits = ""
+		self.extFuse = "" 
+		self.highFuse = ""
+		self.lowFuse = ""
+		self.bootloader = ""
 
 #
 # AVRDUDE, dude
@@ -62,10 +62,10 @@ class atmega():
 class avrdude():
 	"avrdude properties"
 	def __init__(self):
-		self.path = "avrdude"
-		self.programmer = "avrispmkII"
-		self.programmerSN = "000200149639"
-		self.port = "usb"
+		self.path = ""
+		self.programmer = ""
+		self.programmerSN = ""
+		self.port = ""
 	def upload(self, target):
 		#call avrdude as a subprocess
 		cmd = self.path + " -c " + self.programmer + " -P " + self.port + ":" +self.programmerSN
@@ -84,6 +84,7 @@ class avrdude():
 		print(cmd)
 		args = shlex.split(cmd)
 		p = subprocess.Popen(args)
+
 
 class window(wx.Frame):
 	def __init__(self):
@@ -115,9 +116,12 @@ class window(wx.Frame):
 		nb.AddPage(uploadTab(nb,self), "Upload/Test")
 		self.isp1set = ispSettingsTab(nb)
 		self.isp2set = ispSettingsTab(nb)
-		nb.AddPage(self.isp1set, "ISP1 Settings")
-		nb.AddPage(self.isp2set, "ISP2 Settings")
-		nb.AddPage(ispSettingsTab(nb), "Target Settings")
+		self.targetSettings = targetSettingsTab(nb)
+		self.settings = settingsTab(nb)
+		nb.AddPage(self.isp1set, "ISP1")
+		nb.AddPage(self.isp2set, "ISP2")
+		nb.AddPage(self.targetSettings, "Target")
+		nb.AddPage(self.settings, "Settings")
 		sizer = wx.BoxSizer(wx.VERTICAL)
 		sizer.Add(nb, 1, wx.ALL|wx.EXPAND, 5)
 		p.SetSizer(sizer)
@@ -136,16 +140,13 @@ class window(wx.Frame):
                                    "*.conf", wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
 		if dlg.ShowModal() == wx.ID_OK:
 			cfgfile = open(dlg.GetPath(),'w')
-			if(not self.config.has_section('isp1')): self.config.add_section('isp1')
-			if(not self.config.has_section('isp2')): self.config.add_section('isp2')
-			if(not self.config.has_section('avr1')): self.config.add_section('avr1')
-			if(not self.config.has_section('avr2')): self.config.add_section('avr2')
+			if(not self.config.has_section('uploader')): self.config.add_section('uploader')
 			self.isp1set.getConfig(self.isp1,self.avr1)
 			self.isp2set.getConfig(self.isp2,self.avr2)
-			self.config.set('isp1','isp1',self.isp1.__dict__)
-			self.config.set('isp2','isp2',self.isp2.__dict__)
-			self.config.set('avr1','avr1',self.avr1.__dict__)
-			self.config.set('avr2','avr2',self.avr2.__dict__)
+			self.config.set('uploader','isp1',self.isp1.__dict__)
+			self.config.set('uploader','isp2',self.isp2.__dict__)
+			self.config.set('uploader','avr1',self.avr1.__dict__)
+			self.config.set('uploader','avr2',self.avr2.__dict__)
 			self.config.write(cfgfile)
 			cfgfile.close()
 		dlg.Destroy()
@@ -155,12 +156,14 @@ class window(wx.Frame):
 		dlg = wx.FileDialog(self, "Load Configuration", self.dirname, "", "*.conf", wx.FD_OPEN)
 		if dlg.ShowModal() == wx.ID_OK:
 			self.config.read(dlg.GetPath())
-			self.isp1.__dict__ = eval(self.config.get('isp1', 'isp1'))
-			self.isp2.__dict__ = eval(self.config.get('isp2', 'isp2'))
-			self.avr1.__dict__ = eval(self.config.get('avr1', 'avr1'))
-			self.avr2.__dict__ = eval(self.config.get('avr2', 'avr2'))
+			self.isp1.__dict__ = eval(self.config.get('uploader', 'isp1'))
+			self.isp2.__dict__ = eval(self.config.get('uploader', 'isp2'))
+			self.avr1.__dict__ = eval(self.config.get('uploader', 'avr1'))
+			self.avr2.__dict__ = eval(self.config.get('uploader', 'avr2'))
 			self.isp1set.loadConfig(self.isp1,self.avr1)
 			self.isp2set.loadConfig(self.isp2,self.avr2)
+			self.settings.loadConfig(self.isp1,self.avr1)
+			self.isp2.path = self.isp1.path #share path between avrdude objects
 		dlg.Destroy()
 
 	def OnAbout(self, event):
@@ -255,6 +258,50 @@ class ispSettingsTab(wx.Panel):
 		self.programmerSN.SetValue(avrdude.programmerSN)
 		self.port.SetValue(avrdude.port)
 
+
+class settingsTab(wx.Panel):
+	"""
+	This will be the first notebook tab
+	"""
+	#----------------------------------------------------------------------
+	def __init__(self,parent):
+		""""""
+		wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
+		sizer = wx.BoxSizer(wx.HORIZONTAL)
+		fgs = wx.FlexGridSizer(6, 2, 9, 25)
+		avrdudePathTxt = wx.StaticText(self, label="AVRDUDE Path : ")
+		self.avrdudePath = wx.TextCtrl(self)
+		fgs.AddMany([(avrdudePathTxt), (self.avrdudePath, 1, wx.EXPAND)])
+		fgs.AddGrowableCol(1, 1)
+		sizer.Add(fgs, proportion=1, flag=wx.ALL|wx.EXPAND, border=15)
+		self.SetSizer(sizer)
+	def getConfig(self,avrdude,atmega):
+		avrdude.path = self.avrdudePath.GetValue()
+	def loadConfig(self,avrdude,atmega):
+		self.avrdudePath.SetValue(avrdude.path)
+	
+
+class targetSettingsTab(wx.Panel):
+	"""
+	This will be the first notebook tab
+	"""
+	#----------------------------------------------------------------------
+	def __init__(self,parent):
+		""""""
+		wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
+		sizer = wx.BoxSizer(wx.HORIZONTAL)
+		fgs = wx.FlexGridSizer(6, 2, 9, 25)
+		avrdudePathTxt = wx.StaticText(self, label="Firmware hex : ")
+		self.avrdudePath = wx.TextCtrl(self)
+		fgs.AddMany([(avrdudePathTxt), (self.avrdudePath, 1, wx.EXPAND)])
+		fgs.AddGrowableCol(1, 1)
+		sizer.Add(fgs, proportion=1, flag=wx.ALL|wx.EXPAND, border=15)
+		self.SetSizer(sizer)
+	def getConfig(self,avrdude,atmega):
+		avrdude.path = self.avrdudePath.GetValue()
+	def loadConfig(self,avrdude,atmega):
+		self.avrdudePath.SetValue(avrdude.path)
+	
 #
 # main, meng
 #
