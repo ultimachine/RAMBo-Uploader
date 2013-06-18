@@ -61,7 +61,7 @@ class window(wx.Frame):
 		"""Constructor"""
 		wx.Frame.__init__(self, None, wx.ID_ANY,
 			"RAMBo Uploader and Tester",
-			size=(600,400)
+			size=(800,600)
 			)
 		#Load Config
 		self.config = ConfigParser.RawConfigParser()
@@ -161,7 +161,7 @@ class uploadTab(wx.Panel):
 		""""""
 		wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
 		#Setup sizers
-		consoleSizer = wx.GridSizer(2,1,0,0)
+		consoleSizer = wx.BoxSizer(wx.VERTICAL)
 		gs = wx.FlexGridSizer(5,2,5,5)
 
 		#buttons
@@ -173,7 +173,7 @@ class uploadTab(wx.Panel):
 		self.uploadAll.Bind(wx.EVT_BUTTON, window.uploadISPAll)
 		self.runTest= wx.Button(self,label='Run Test')
 		self.serialNumber = wx.TextCtrl(self)
-		self.console = wx.TextCtrl(self, style=wx.TE_MULTILINE)
+		self.console = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY)
 		blank = (wx.StaticText(self), wx.EXPAND)
 
 		#add widgets
