@@ -9,7 +9,6 @@ import ConfigParser
 #
 # About Dialog
 #
-version = "0.1-Dev"
 
 class HtmlWindow(wx.html.HtmlWindow):
 	def __init__(self, parent, id, size=(600,400)):
@@ -19,7 +18,7 @@ class HtmlWindow(wx.html.HtmlWindow):
 
 class AboutBox(wx.Dialog):
 	def __init__(self):
-		aboutText = """<p>RAMBo Uploader and Tester version %(version)s. Developed by <a href="http://ultimachine.com">UltiMachine</a>. 
+		aboutText = """<p>RAMBo Uploader and Tester. Developed by <a href="http://ultimachine.com">UltiMachine</a>. 
 		<br /> <br />
 		<b>Version Info</b>
 		<br />Python : %(python)s
@@ -83,8 +82,8 @@ class avrdude():
 			cmd += " -Ulock:w:" +target.lockBits + ":m"
 		print(cmd)
 		args = shlex.split(cmd)
-		p = subprocess.Popen(args)
-
+		self.uploadProcess = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+		
 
 class window(wx.Frame):
 	def __init__(self):
@@ -113,11 +112,12 @@ class window(wx.Frame):
 		#Setup Tabs
 		p = wx.Panel(self)
 		nb = wx.Notebook(p)
-		nb.AddPage(uploadTab(nb,self), "Upload/Test")
+		self.uploadTab = uploadTab(nb,self)
 		self.isp1set = ispSettingsTab(nb)
 		self.isp2set = ispSettingsTab(nb)
 		self.targetSettings = targetSettingsTab(nb)
 		self.settings = settingsTab(nb)
+		nb.AddPage(self.uploadTab, "Upload/Test")
 		nb.AddPage(self.isp1set, "ISP1")
 		nb.AddPage(self.isp2set, "ISP2")
 		nb.AddPage(self.targetSettings, "Target")
@@ -173,24 +173,26 @@ class window(wx.Frame):
 	
 	def uploadISP1(self, event):
 		self.isp1.upload(self.avr1)
+		self.uploadTab.console.Value += self.isp1.uploadProcess.communicate()[0]
 	def uploadISP2(self, event):
 		self.isp2.upload(self.avr2)
+		self.uploadTab.console.Value += self.isp2.uploadProcess.communicate()[0]
 	def uploadISPAll(self, event):
 		self.isp1.upload(self.avr1)
 		self.isp2.upload(self.avr2)
+		self.uploadTab.console.Value += self.isp1.uploadProcess.communicate()[0]
+		self.uploadTab.console.Value += self.isp2.uploadProcess.communicate()[0]
 #
 # Notebook Tabs
 #
 class uploadTab(wx.Panel):
-	"""
-	This will be the first notebook tab
-	"""
-	#----------------------------------------------------------------------
 	def __init__(self,parent,window):
 		""""""
 		wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
+		#Setup sizers
+		consoleSizer = wx.GridSizer(2,1,0,0)
 		gs = wx.FlexGridSizer(5,2,5,5)
-		
+
 		#buttons
 		self.uploadISP1 = wx.Button(self,label='Upload ISP1')
 		self.uploadISP1.Bind(wx.EVT_BUTTON, window.uploadISP1)
@@ -198,11 +200,17 @@ class uploadTab(wx.Panel):
 		self.uploadISP2.Bind(wx.EVT_BUTTON, window.uploadISP2)
 		self.uploadAll = wx.Button(self,label='Upload All')
 		self.uploadAll.Bind(wx.EVT_BUTTON, window.uploadISPAll)
-
 		self.runTest= wx.Button(self,label='Run Test')
 		self.serialNumber = wx.TextCtrl(self)
-		gs.AddMany([(self.uploadISP1), (self.uploadISP2), (self.uploadAll),           (wx.StaticText(self), wx.EXPAND),(wx.StaticText(self, label="Serial Number"), wx.EXPAND), (self.serialNumber, 1, ), (self.runTest)])
-		self.SetSizer(gs)
+		self.console = wx.TextCtrl(self, style=wx.TE_MULTILINE)
+		blank = (wx.StaticText(self), wx.EXPAND)
+
+		#add widgets
+		gs.AddMany([(self.uploadISP1), (self.uploadISP2), (self.uploadAll), blank, (wx.StaticText(self, label="Serial Number : "), wx.EXPAND), (self.serialNumber), (self.runTest), blank, (wx.StaticText(self, label="Error Output :"), wx.EXPAND), blank])
+		consoleSizer.Add(gs)
+		consoleSizer.Add(self.console,1,wx.ALL|wx.EXPAND)
+		self.SetSizer(consoleSizer)
+
 
 class ispSettingsTab(wx.Panel):
 	"""
@@ -237,6 +245,7 @@ class ispSettingsTab(wx.Panel):
 		fgs.AddGrowableCol(1, 1)
 		sizer.Add(fgs, proportion=1, flag=wx.ALL|wx.EXPAND, border=15)
 		self.SetSizer(sizer)
+
 	def getConfig(self,avrdude,atmega):
 		atmega.name = self.name.GetValue()
 		atmega.lockBits = self.lockBits.GetValue()
@@ -247,6 +256,7 @@ class ispSettingsTab(wx.Panel):
 		avrdude.programmer = self.programmer.GetValue()
 		avrdude.programmerSN = self.programmerSN.GetValue()
 		avrdude.port = self.port.GetValue()
+
 	def loadConfig(self,avrdude,atmega):
 		self.name.SetValue(atmega.name)
 		self.lockBits.SetValue(atmega.lockBits)
@@ -275,8 +285,10 @@ class settingsTab(wx.Panel):
 		fgs.AddGrowableCol(1, 1)
 		sizer.Add(fgs, proportion=1, flag=wx.ALL|wx.EXPAND, border=15)
 		self.SetSizer(sizer)
+
 	def getConfig(self,avrdude,atmega):
 		avrdude.path = self.avrdudePath.GetValue()
+
 	def loadConfig(self,avrdude,atmega):
 		self.avrdudePath.SetValue(avrdude.path)
 	
@@ -297,8 +309,10 @@ class targetSettingsTab(wx.Panel):
 		fgs.AddGrowableCol(1, 1)
 		sizer.Add(fgs, proportion=1, flag=wx.ALL|wx.EXPAND, border=15)
 		self.SetSizer(sizer)
+
 	def getConfig(self,avrdude,atmega):
 		avrdude.path = self.avrdudePath.GetValue()
+
 	def loadConfig(self,avrdude,atmega):
 		self.avrdudePath.SetValue(avrdude.path)
 	
