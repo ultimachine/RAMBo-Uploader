@@ -1,5 +1,4 @@
 import subprocess
-import shlex
 
 #
 # AVRDUDE, dude
@@ -14,29 +13,31 @@ class avrdude():
 		self.baudrate = ""
 		self.configFile = ""
 		self.autoEraseFlash = ""
+
 	def upload(self, target):
-		#call avrdude as a subprocess
-		cmd = self.path + " -c " + self.programmer + " -P " + self.port + ":" +self.programmerSN
+		#assemble arguement array
+		cmd = [self.path, "-c", self.programmer, "-P", self.port + ":" + self.programmerSN]
 		if target.name:
-			cmd += " -p " + target.name
+			cmd.append("-p" + target.name)
 		if self.baudrate:
-			cmd += " -b " + self.baudrate
+			cmd.append("-b" + self.baudrate)
 		if self.configFile:
-			cmd += " -C " + self.configFile
+			cmd.append("-C" + self.configFile)
 		if self.autoEraseFlash:
-			cmd += " -D"
+			cmd.append("-D")
 		if target.bootloader:
-			cmd += " -Uflash:w:" + target.bootloader + ":i"
+			cmd.append("-Uflash:w:" + target.bootloader + ":i")
 		if target.extFuse:
-			cmd += " -Uefuse:w:" + target.extFuse + ":m"
+			cmd.append("-Uefuse:w:" + target.extFuse + ":m")
 		if target.highFuse:
-			cmd += " -Uhfuse:w:" + target.highFuse + ":m"
+			cmd.append("-Uhfuse:w:" + target.highFuse + ":m")
 		if target.lowFuse:
-			cmd += " -Ulfuse:w:" + target.lowFuse + ":m"
+			cmd.append("-Ulfuse:w:" + target.lowFuse + ":m")
 		if target.lockBits:
-			cmd += " -Ulock:w:" +target.lockBits + ":m"
+			cmd.append("-Ulock:w:" +target.lockBits + ":m")
+
 		print(cmd)
-		args = shlex.split(cmd)
-		self.uploadProcess = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+		#call avrdude as a subprocess
+		self.uploadProcess = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
 		
 
