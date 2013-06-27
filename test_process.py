@@ -9,14 +9,14 @@ import string
 
 try:
 	controller = Serial(port = "/dev/ttyACM0", baudrate = 115200)
-	target = Serial(port = "/dev/ttyACM1", baudrate = 115200)
+	target = Serial(port = None, baudrate = 115200)
 except SerialException:
 	print "Error, could not connect"
 	traceback.print_exc()
+print "Target baudrate : " + str(target.baudrate)
 print "Controller port : " + controller.name
 print "Controller baudrate : " + str(controller.baudrate)
-print "Target port : " + target.name
-print "Target baudrate : " + str(target.baudrate)
+
 
 monitorTime = 1
 stepperSpeed = 100
@@ -30,9 +30,12 @@ print "Monitoring test controller..."
 
 while(testing):
 	output += controller.read(controller.inWaiting())
-	targetOut += target.read(target.inWaiting())
+	if(target.port): targetOut += target.read(target.inWaiting())
 	if state == "start":
 		if "start" in output:
+			target.port = "/dev/ttyACM2"
+			target.open()
+			print "Target port : " + target.port
 			state = "homing"
 			print "Test started at " + strftime("%Y-%m-%d %H:%M:%S", gmtime())
 			output = ""
@@ -199,4 +202,6 @@ while(testing):
 		controller.write("W3L_")
 		print "Preparing Test Jig for next board.."
 		controller.write("H5000_")
+		target.close()
+		target.port = None
 		state = "start"
