@@ -126,7 +126,7 @@ while(testing):
 			entered = False
 	elif state == "program for test":
 		print "Programming for the tests..."
-		prog = subprocess.Popen("avrdude -patmega2560 -cstk500v2 -P/dev/ttyACM1 -b115200 -D -Uflash:w:/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex".split())
+		prog = subprocess.Popen("avrdude -patmega2560 -cstk500v2 -P/dev/ttyACM1 -b115200 -D -Uflash:w:/home/steve/UltiMachine/Test_Jig_Firmware/target_test_firmware.hex".split())
 		state = prog.wait()
 		if state == 0:
 			print "Finished upload. Waiting for connection..."
