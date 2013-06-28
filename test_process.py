@@ -51,6 +51,25 @@ def signal_handler(signal, frame):
 	sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
+#Define test cases
+def testVrefs(vals):
+	for x in vals:
+		if not 170 <= x <= 190: 
+			return False
+	return True 
+
+def testSupply(vals):
+	for x in vals:
+		if not 210 <= x <= 220:
+			return False
+	return True
+
+def testThermistor(vals):
+	for x in vals:
+		if not 975 <= x <= 980:
+			return False
+	return True
+
 print "Test server started. Press CTRL-C to exit."
 print "Monitoring test controller..."
 
@@ -63,7 +82,7 @@ while(testing):
 			state = "homing"
 			print "Test started at " + strftime("%Y-%m-%d %H:%M:%S", gmtime())
 			output = ""
-			
+			targetOut = ""
 	elif state == "homing":
 		if not entered:
 			print "Homing test jig..."
@@ -204,11 +223,16 @@ while(testing):
 			controller.write("A3_") #e1
 			print "Testing stepper driver references..."
 		if output.count("ok") == 5:
-			state = "supply test"
 			entered = False
-			print "Vrefs acquired"
+			print "Vref values..."
 			vrefTest = map(int,re.findall(r'\b\d+\b', output)) 
-			print vrefTest	
+			print vrefTest
+			if testVrefs(vrefTest):
+				print "Test passed."
+				state = "supply test"
+			if not testVrefs(vrefTest):
+				print "Test failed."
+				state = "board fail"		
 			output = ""
 			targetOut = ""
 	elif state == "supply test":
@@ -218,11 +242,16 @@ while(testing):
 			controller.write("A2_") #bed rail
 			print "Testing supply voltages..."
 		if output.count("ok") == 2:
-			state = "mosfet high"
 			entered = False
-			print "Voltages acquired."
+			print "Supply voltage values..."
 			supplyTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print supplyTest	
+			if testSupply(supplyTest):
+				print "Test passed."
+				state = "mosfet high"
+			if not testSupply(supplyTest):
+				print "Test failed."
+				state = "board fail"		
 			output = ""
 			targetOut = ""
 	elif state == "mosfet high":
@@ -281,12 +310,17 @@ while(testing):
 			target.write("A1_")
 			target.write("A2_")
 		if targetOut.count("ok") == 3:
-			print "Readings acquired."
+			print "Target thermistor readings..."
 			thermistorTest = map(int,re.findall(r'\b\d+\b', targetOut)) 
 			print thermistorTest
+			if testThermistor(thermistorTest):
+				print "Test passed."
+				state = "program marlin"
+			if not testThermistor(thermistorTest):
+				print "Test failed."
+				state = "board fail"	
 			targetOut = ""
 			entered = False
-			state = "program marlin"
 	elif state == "program marlin":
 		print "Disconnecting target from test script..."
 		target.close()
@@ -316,3 +350,5 @@ while(testing):
 		controller.write("H5000_")
 		state = "start"
 		entered = False
+
+
