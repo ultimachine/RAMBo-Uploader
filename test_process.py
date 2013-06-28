@@ -35,6 +35,7 @@ halfstepTest = []
 quarterstepTest = []
 sixteenthstepTest = []
 vrefTest = []
+supplyTest = []
 mosfethighTest = []
 mosfetlowTest = []
 thermistorTest = []
@@ -193,11 +194,25 @@ while(testing):
 			controller.write("A3_") #e1
 			print "Testing stepper driver references..."
 		if output.count("ok") == 5:
-			state = "mosfet high"
+			state = "supply test"
 			entered = False
 			print "Vrefs acquired"
 			vrefTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print vrefTest	
+			output = ""
+			targetOut = ""
+	elif state == "supply test":
+		if not entered:
+			entered = True
+			controller.write("A7_") #extruder rail				
+			controller.write("A2_") #bed rail
+			print "Testing supply voltages..."
+		if output.count("ok") == 2:
+			state = "mosfet high"
+			entered = False
+			print "Voltages acquired."
+			supplyTest = map(int,re.findall(r'\b\d+\b', output)) 
+			print supplyTest	
 			output = ""
 			targetOut = ""
 	elif state == "mosfet high":
