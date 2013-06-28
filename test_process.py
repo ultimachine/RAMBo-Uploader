@@ -7,7 +7,8 @@ import sys
 import traceback
 import time 
 import string
-import threading 
+import signal
+import sys 
 import subprocess 
 import re
 try:
@@ -42,6 +43,15 @@ thermistorTest = []
 
 groupn = lambda l, n: zip(*(iter(l),) * n)
 
+#Setup shutdown handlers
+def signal_handler(signal, frame):
+	print "Shutting down test server..."
+	controller.close()
+	target.close()
+	sys.exit(0)
+signal.signal(signal.SIGINT, signal_handler)
+
+print "Test server started. Press CTRL-C to exit."
 print "Monitoring test controller..."
 
 while(testing):
