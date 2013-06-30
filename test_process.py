@@ -29,6 +29,7 @@ while not controller.inWaiting():
 
 monitorPin = 44 #PL5 
 triggerPin = 3 #bed
+monitorFrequency = 1000
 targetPort = "/dev/ttyACM1"
 stepperSpeed = 100
 testing = True
@@ -53,6 +54,8 @@ groupn = lambda l, n: zip(*(iter(l),) * n)
 #Setup shutdown handlers
 def signal_handler(signal, frame):
 	print "Shutting down test server..."
+	controller.write("W3L")
+	controller.write("H5000")
 	controller.close()
 	target.close()
 	sys.exit(0)
@@ -149,11 +152,12 @@ while(testing):
 		while not os.path.exists(targetPort):
 			time.sleep(0.1)
 		print "Programming for the tests..."
-		command = "avrdude -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:/home/steve/UltiMachine/Test_Jig_Firmware/target_test_firmware.hex"
+		command = "avrdude -F -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:/home/steve/UltiMachine/Test_Jig_Firmware/target_test_firmware.hex"
 		prog = subprocess.Popen(command.split())
 		state = prog.wait()
 		if state == 0:
 			print "Finished upload. Waiting for connection..."
+			del prog
 			state = "connecting target"
 			while not os.path.exists(targetPort):
 				time.sleep(0.1)
@@ -184,17 +188,17 @@ while(testing):
 			entered = True
 			print "Testing steppers at full step..."
 			target.write("U1_")
-			controller.write("M"+str(monitorPin)+"F100_")
+			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C200F800UP"+str(triggerPin)+"_")
-			while not "ok" in output:
-				pass 
-			controller.write("M"+str(monitorPin)+"F100_")
+		if output.count("ok") == 1:
+			output+="ok"
+			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C200F800DP"+str(triggerPin)+"_")
-		if output.count("ok") == 2:
+		if output.count("ok") == 3:
 			state = "halfstep"
 			entered = False
 			print "Full Step test finished."
-			fullstepTest =groupn(map(int,re.findall(r'\b\d+\b', output)),10)
+			fullstepTest =groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			print fullstepTest
 			output = ""
 	elif state == "halfstep":
@@ -202,17 +206,17 @@ while(testing):
 			entered = True
 			print "Testing steppers at half step..."
 			target.write("U2_")
-			controller.write("M"+str(monitorPin)+"F100_")
+			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C400F1600UP"+str(triggerPin)+"_")
-			while not "ok" in output:
-				pass 
-			controller.write("M"+str(monitorPin)+"F100_")
+		if output.count("ok") == 1:
+			output+="ok"
+			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C400F1600DP"+str(triggerPin)+"_")
-		if output.count("ok") == 2:
+		if output.count("ok") == 3:
 			state = "quarterstep"
 			entered = False
 			print "Half Step test finished."
-			halfstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),10)
+			halfstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			print halfstepTest
 			output = ""
 	elif state == "quarterstep":
@@ -220,17 +224,17 @@ while(testing):
 			entered = True
 			print "Testing steppers at quarter step..."
 			target.write("U4_")
-			controller.write("M"+str(monitorPin)+"F100_")
+			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C800F3200UP"+str(triggerPin)+"_")
-			while not "ok" in output:
-				pass 
-			controller.write("M"+str(monitorPin)+"F100_")
+		if output.count("ok") == 1:
+			output +="ok"
+			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C800F3200DP"+str(triggerPin)+"_")
-		if output.count("ok") == 2:
+		if output.count("ok") == 3:
 			state = "sixteenthstep"
 			entered = False
 			print "Quarter Step test finished."
-			quarterstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),10)
+			quarterstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			print quarterstepTest
 			output = ""
 	elif state == "sixteenthstep":
@@ -238,17 +242,17 @@ while(testing):
 			entered = True
 			print "Testing steppers at sixteenth step..."
 			target.write("U16_")
-			controller.write("M"+str(monitorPin)+"F100_")
+			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C3200F12800UP"+str(triggerPin)+"_")
-			while not "ok" in output:
-				pass 
-			controller.write("M"+str(monitorPin)+"F100_")
+		if output.count("ok") == 1:
+			output += "ok"
+			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C3200F12800DP"+str(triggerPin)+"_")
-		if output.count("ok") == 2:
+		if output.count("ok") == 3:
 			state = "vrefs"
 			entered = False
 			print "Sixteenth Step test finished."
-			sixteenthTest = groupn(map(int,re.findall(r'\b\d+\b', output)),10)
+			sixteenthstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			print sixteenthstepTest
 			output = ""
 	elif state == "vrefs":
@@ -303,12 +307,12 @@ while(testing):
 			target.write("W3H")
 			target.write("W2H")
 			time.sleep(0.1)
-			controller.write("R14_")
-			controller.write("R15_")
-			controller.write("R16_")
-			controller.write("R17_")
-			controller.write("R18_")
-			controller.write("R19_")
+			controller.write("Q44_")
+			controller.write("Q32_")
+			controller.write("Q45_")
+			controller.write("Q31_")
+			controller.write("Q46_")
+			controller.write("Q30_")
 		if output.count("ok") == 6:
 			entered = False
 			print "Mosfet output values..."
@@ -333,12 +337,12 @@ while(testing):
 			target.write("W3L")
 			target.write("W2L")
 			time.sleep(0.1)
-			controller.write("R14_")
-			controller.write("R15_")
-			controller.write("R16_")
-			controller.write("R17_")
-			controller.write("R18_")
-			controller.write("R19_")
+			controller.write("Q44_")
+			controller.write("Q32_")
+			controller.write("Q45_")
+			controller.write("Q31_")
+			controller.write("Q46_")
+			controller.write("Q30_")
 		if output.count("ok") == 6:
 			entered = False
 			print "Mosfet output values..."
