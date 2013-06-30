@@ -11,6 +11,9 @@ import signal
 import sys 
 import subprocess 
 import re
+
+print "RAMBo Test Server"
+
 try:
 	controller = Serial(port = "/dev/ttyACM0", baudrate = 115200)
 	target = Serial(port = None, baudrate = 115200)
@@ -20,10 +23,13 @@ except SerialException:
 print "Target baudrate : " + str(target.baudrate)
 print "Controller port : " + controller.name
 print "Controller baudrate : " + str(controller.baudrate)
-
+print "Waiting for controller initialization..."
+while not controller.inWaiting():
+	time.sleep(0.1)
 
 monitorPin = 44 #PL5 
 triggerPin = 3 #bed
+targetPort = "/dev/ttyACM1"
 stepperSpeed = 100
 testing = True
 state = "start"
@@ -71,11 +77,24 @@ def testThermistor(vals):
 			return False
 	return True
 
+def testMosfetLow(vals):
+	for x in vals:
+		if not x == 1:
+			return False
+	return True
+
+def testMosfetHigh(vals):
+	for x in vals:
+		if not x == 0:
+			return False
+	return True
+
 print "Test server started. Press CTRL-C to exit."
 print "Monitoring test controller..."
 
 while(testing):
 	output += controller.read(controller.inWaiting())
+	#raw_input("Press Enter to continue...")
 	if(target.port): 
 		targetOut += target.read(target.inWaiting())
 	if state == "start":
@@ -97,7 +116,7 @@ while(testing):
 	elif state == "clamping":
 		if not entered:
 			print "Clamping board..."
-			controller.write("C18650F3000U_")
+			controller.write("C18700F3000U_")
 			entered = True
 		if "ok" in output:
 			state = "powering"
@@ -126,21 +145,28 @@ while(testing):
 			state = "board fail"
 			entered = False
 	elif state == "program for test":
+		print "Detecting target..."
+		while not os.path.exists(targetPort):
+			time.sleep(0.1)
 		print "Programming for the tests..."
-		prog = subprocess.Popen("avrdude -patmega2560 -cstk500v2 -P/dev/ttyACM1 -b115200 -D -Uflash:w:/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex".split())
+		command = "avrdude -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:/home/steve/UltiMachine/Test_Jig_Firmware/target_test_firmware.hex"
+		prog = subprocess.Popen(command.split())
 		state = prog.wait()
 		if state == 0:
 			print "Finished upload. Waiting for connection..."
 			state = "connecting target"
-			time.sleep(3)
+			while not os.path.exists(targetPort):
+				time.sleep(0.1)
 		else:
 			print "Upload failed"
 			state = "board fail"
 			entered = False
 	elif state == "connecting target":
 		print "Attempting connect..."	
-		target.port = "/dev/ttyACM1"
+		target.port = targetPort
 		target.open()
+		while not target.inWaiting():
+			pass
 		print "Target port : " + target.port 	
 		state = "fullstep"	
 	elif state == "powering":
@@ -153,7 +179,6 @@ while(testing):
 			entered = False
 			print "Target Board powered."
 			output = ""
-			
 	elif state == "fullstep":
 		if not entered:
 			entered = True
@@ -272,49 +297,61 @@ while(testing):
 			entered = True
 			print "Testing Mosfets High..."
 			target.write("W9H")
-			controller.write("R44_")
 			target.write("W8H")
-			controller.write("R32_")
 			target.write("W7H")
-			controller.write("R45_")
 			target.write("W6H")
-			controller.write("R31_")
 			target.write("W3H")
-			controller.write("R46_")
 			target.write("W2H")
-			controller.write("R30_")
+			time.sleep(0.1)
+			controller.write("R14_")
+			controller.write("R15_")
+			controller.write("R16_")
+			controller.write("R17_")
+			controller.write("R18_")
+			controller.write("R19_")
 		if output.count("ok") == 6:
-			targetOut = ""
-			print "Mosfet outputs recorded."
+			entered = False
+			print "Mosfet output values..."
 			mosfethighTest = map(int,re.findall(r'\b\d+\b', output)) 
-			state = "mosfet low"
 			print mosfethighTest
+			if testMosfetHigh(mosfethighTest):
+				print "Test Passed."
+				state = "mosfet low"
+			if not testMosfetHigh(mosfethighTest):
+				print "Test failed."
+				state = "board fail"
 			output = ""
 			targetOut = ""
-			entered = False
 	elif state == "mosfet low":
 		if not entered:
 			entered = True
 			print "Testing mosfets Low..."
-			controller.write("R44_")
+			target.write("W9L")
 			target.write("W8L")
-			controller.write("R32_")
 			target.write("W7L")
-			controller.write("R45_")
 			target.write("W6L")
-			controller.write("R31_")
 			target.write("W3L")
-			controller.write("R46_")
 			target.write("W2L")
-			controller.write("R30_")
-		if output.count("ok") >= 6:
-			print "Mosfet outputs recorded."
+			time.sleep(0.1)
+			controller.write("R14_")
+			controller.write("R15_")
+			controller.write("R16_")
+			controller.write("R17_")
+			controller.write("R18_")
+			controller.write("R19_")
+		if output.count("ok") == 6:
+			entered = False
+			print "Mosfet output values..."
 			mosfetlowTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print mosfetlowTest
+			if testMosfetLow(mosfetlowTest):
+				print "Test Passed."
+				state = "thermistors"
+			if not testMosfetLow(mosfetlowTest):
+				print "Test failed."
+				state = "board fail"
 			output = ""
 			targetOut = ""
-			state = "thermistors"
-			entered = False
 	elif state == "thermistors":
 		if not entered:
 			entered = True
@@ -339,7 +376,8 @@ while(testing):
 		target.close()
 		target.port = None 
 		print "Programming Marlin..."
-		prog = subprocess.Popen("avrdude -patmega2560 -cstk500v2 -P/dev/ttyACM1 -b115200 -D -Uflash:w:/home/ultimachine/workspace/johnnyr/Marlinth2.hex".split())
+		command = "avrdude -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:/home/steve/UltiMachine/RAMBo-Uploader/Marlinth2.hex"
+		prog = subprocess.Popen(command.split())
 		state = prog.wait()
 		if state == 0:
 			print "Finished Marlin upload."
@@ -363,5 +401,4 @@ while(testing):
 		controller.write("H5000_")
 		state = "start"
 		entered = False
-
 
