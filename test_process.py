@@ -22,7 +22,8 @@ print "Controller port : " + controller.name
 print "Controller baudrate : " + str(controller.baudrate)
 
 
-monitorTime = 1
+monitorPin = 44 #PL5 
+triggerPin = 3 #bed
 stepperSpeed = 100
 testing = True
 state = "start"
@@ -158,10 +159,13 @@ while(testing):
 			entered = True
 			print "Testing steppers at full step..."
 			target.write("U1_")
-			controller.write("M"+str(monitorTime)+"F100_")
-			target.write("C200F800U")
-			target.write("C200F800D")
-		if "ok" in output:
+			controller.write("M"+str(monitorPin)+"F100_")
+			target.write("C200F800UP"+str(triggerPin)+"_")
+			while not "ok" in output:
+				pass 
+			controller.write("M"+str(monitorPin)+"F100_")
+			target.write("C200F800DP"+str(triggerPin)+"_")
+		if output.count("ok") == 2:
 			state = "halfstep"
 			entered = False
 			print "Full Step test finished."
@@ -171,12 +175,15 @@ while(testing):
 	elif state == "halfstep":
 		if not entered:
 			entered = True
-			controller.write("M"+str(monitorTime)+"F100_")
 			print "Testing steppers at half step..."
 			target.write("U2_")
-			target.write("C400F1600U")
-			target.write("C400F1600D")
-		if "ok" in output:
+			controller.write("M"+str(monitorPin)+"F100_")
+			target.write("C400F1600UP"+str(triggerPin)+"_")
+			while not "ok" in output:
+				pass 
+			controller.write("M"+str(monitorPin)+"F100_")
+			target.write("C400F1600DP"+str(triggerPin)+"_")
+		if output.count("ok") == 2:
 			state = "quarterstep"
 			entered = False
 			print "Half Step test finished."
@@ -186,12 +193,15 @@ while(testing):
 	elif state == "quarterstep":
 		if not entered:
 			entered = True
-			controller.write("M"+str(monitorTime)+"F100_")
 			print "Testing steppers at quarter step..."
 			target.write("U4_")
-			target.write("C800F3200U")
-			target.write("C800F3200D")
-		if "ok" in output:
+			controller.write("M"+str(monitorPin)+"F100_")
+			target.write("C800F3200UP"+str(triggerPin)+"_")
+			while not "ok" in output:
+				pass 
+			controller.write("M"+str(monitorPin)+"F100_")
+			target.write("C800F3200DP"+str(triggerPin)+"_")
+		if output.count("ok") == 2:
 			state = "sixteenthstep"
 			entered = False
 			print "Quarter Step test finished."
@@ -201,12 +211,15 @@ while(testing):
 	elif state == "sixteenthstep":
 		if not entered:
 			entered = True
-			controller.write("M"+str(monitorTime)+"F100_")
 			print "Testing steppers at sixteenth step..."
 			target.write("U16_")
-			target.write("C3200F12800U")
-			target.write("C3200F12800D")
-		if "ok" in output:
+			controller.write("M"+str(monitorPin)+"F100_")
+			target.write("C3200F12800UP"+str(triggerPin)+"_")
+			while not "ok" in output:
+				pass 
+			controller.write("M"+str(monitorPin)+"F100_")
+			target.write("C3200F12800DP"+str(triggerPin)+"_")
+		if output.count("ok") == 2:
 			state = "vrefs"
 			entered = False
 			print "Sixteenth Step test finished."
