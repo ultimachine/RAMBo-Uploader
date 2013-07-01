@@ -35,6 +35,8 @@ monitorPin = 44 #PL5
 triggerPin = 3 #bed
 monitorFrequency = 1000
 targetPort = "/dev/ttyACM1"
+testFwPath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
+shipFwPath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 stepperSpeed = 100
 testing = True
 state = "start"
@@ -157,7 +159,7 @@ while(testing):
 		while not os.path.exists(targetPort):
 			time.sleep(0.5)
 		print "Programming for the tests..."
-		command = "avrdude -F -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:/home/steve/UltiMachine/Test_Jig_Firmware/target_test_firmware.hex"
+		command = "avrdude -F -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:"+testFwPath
 		prog = subprocess.Popen(command.split())
 		print "Avrdude pid... " + str(prog.pid)
 		state = prog.wait()
@@ -177,7 +179,8 @@ while(testing):
 		while not target.inWaiting():
 			pass
 		print "Target port : " + target.port 	
-		state = "powering"	
+		state = "powering"
+		targetOut = ""
 	elif state == "powering":
 		if not entered:
 			print "Waiting for homing to complete"
@@ -188,10 +191,11 @@ while(testing):
 			controller.write("W3H_")
 			entered = True
 		if "ok" in output:
-			state = "fullstep"
+			state = "thermistors"
 			entered = False
 			print "Target Board powered."
 			output = ""
+			targetOut = ""
 	elif state == "fullstep":
 		if not entered:
 			entered = True
@@ -273,7 +277,7 @@ while(testing):
 			print "Sixteenth Step test finished."
 			sixteenthstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			if testStepperResults(sixteenthstepTest):
-				state = "vrefs"
+				state = "program marlin"
 			else:
 				state = "board fail"
 			output = ""
@@ -294,7 +298,7 @@ while(testing):
 			print vrefTest
 			if testVrefs(vrefTest):
 				print "Test passed."
-				state = "supply test"
+				state = "fullstep"
 			if not testVrefs(vrefTest):
 				print "Test failed."
 				state = "board fail"		
@@ -373,7 +377,7 @@ while(testing):
 			print mosfetlowTest
 			if testMosfetLow(mosfetlowTest):
 				print "Test Passed."
-				state = "thermistors"
+				state = "vrefs"
 			if not testMosfetLow(mosfetlowTest):
 				print "Test failed."
 				state = "board fail"
@@ -392,7 +396,7 @@ while(testing):
 			print thermistorTest
 			if testThermistor(thermistorTest):
 				print "Test passed."
-				state = "program marlin"
+				state = "supply test"
 			if not testThermistor(thermistorTest):
 				print "Test failed."
 				state = "board fail"	
@@ -405,7 +409,7 @@ while(testing):
 		target.close()
 		target.port = None 
 		print "Programming Marlin..."
-		command = "avrdude -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:/home/steve/UltiMachine/RAMBo-Uploader/Marlinth2.hex"
+		command = "avrdude -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:"+shipFwPath
 		prog = subprocess.Popen(command.split())
 		print "avrdude pid... " + str(prog.pid)
 		state = prog.wait()
