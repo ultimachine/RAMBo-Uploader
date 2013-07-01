@@ -11,6 +11,7 @@ import signal
 import sys 
 import subprocess 
 import re
+import threading
 
 print "RAMBo Test Server"
 
@@ -24,6 +25,9 @@ print "Target baudrate : " + str(target.baudrate)
 print "Controller port : " + controller.name
 print "Controller baudrate : " + str(controller.baudrate)
 print "Waiting for controller initialization..."
+controller.setDTR(0)
+time.sleep(1)
+controller.setDTR(1)
 while not controller.inWaiting():
 	time.sleep(0.1)
 
@@ -49,7 +53,7 @@ mosfethighTest = []
 mosfetlowTest = []
 thermistorTest = []
 
-groupn = lambda l, n: zip(*(iter(l),) * n)
+groupn = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)]
 
 #Setup shutdown handlers
 def signal_handler(signal, frame):
@@ -64,8 +68,10 @@ signal.signal(signal.SIGINT, signal_handler)
 #Define test cases
 def testVrefs(vals):
 	for x in vals:
-		if not 170 <= x <= 190: 
+		if not 170 <= x <= 195: 
 			return False
+	if max(vals) - min(vals) >= 15:
+		return False
 	return True 
 
 def testSupply(vals):
@@ -76,7 +82,7 @@ def testSupply(vals):
 
 def testThermistor(vals):
 	for x in vals:
-		if not 975 <= x <= 980:
+		if not 975 <= x <= 985:
 			return False
 	return True
 
@@ -92,6 +98,20 @@ def testMosfetHigh(vals):
 			return False
 	return True
 
+def testStepperResults(vals):
+	for i in range(5):
+		forward = vals[i]
+		reverse = vals[i+5]
+		print "Forward -> " + str(forward) + "Reverse -> " + str(reverse)
+		for j in range(5):
+			if forward[j] in range(reverse[4-j]-10,reverse[4-j]+10):
+				pass
+			else: 
+				print "Test failed."
+				#return False
+	print "Test passed."
+	return True	
+
 print "Test server started. Press CTRL-C to exit."
 print "Monitoring test controller..."
 
@@ -102,30 +122,15 @@ while(testing):
 		targetOut += target.read(target.inWaiting())
 	if state == "start":
 		if "start" in output:
-			state = "homing"
+			state = "clamping"
 			print "Test started at " + strftime("%Y-%m-%d %H:%M:%S", gmtime())
 			output = ""
 			targetOut = ""
-	elif state == "homing":
-		if not entered:
-			print "Homing test jig..."
-			controller.write("H5000_")
-			entered = True
-		if "ok" in output:
-			state = "clamping"
-			entered = False
-			print "Homed."
-			output = ""
 	elif state == "clamping":
-		if not entered:
-			print "Clamping board..."
-			controller.write("C18700F3000U_")
-			entered = True
-		if "ok" in output:
-			state = "powering"
-			entered = False
-			print "Board Clamped."
-			output = ""
+		print "Clamping test jig..."
+		controller.write("H5000_")
+		controller.write("C18700F3000U_")
+		state = "program for test"
 	elif state == "uploading":
 		print "Uploading Bootloader and setting fuses..."
 		avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
@@ -150,17 +155,17 @@ while(testing):
 	elif state == "program for test":
 		print "Detecting target..."
 		while not os.path.exists(targetPort):
-			time.sleep(0.1)
+			time.sleep(0.5)
 		print "Programming for the tests..."
 		command = "avrdude -F -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:/home/steve/UltiMachine/Test_Jig_Firmware/target_test_firmware.hex"
 		prog = subprocess.Popen(command.split())
+		print "Avrdude pid... " + str(prog.pid)
 		state = prog.wait()
 		if state == 0:
 			print "Finished upload. Waiting for connection..."
-			del prog
 			state = "connecting target"
 			while not os.path.exists(targetPort):
-				time.sleep(0.1)
+				time.sleep(0.5)
 		else:
 			print "Upload failed"
 			state = "board fail"
@@ -172,14 +177,18 @@ while(testing):
 		while not target.inWaiting():
 			pass
 		print "Target port : " + target.port 	
-		state = "fullstep"	
+		state = "powering"	
 	elif state == "powering":
 		if not entered:
+			print "Waiting for homing to complete"
+			while not output.count("ok") == 2:
+				output += controller.read(controller.inWaiting())
+			output = ""
 			print "Powering Board..."
 			controller.write("W3H_")
 			entered = True
 		if "ok" in output:
-			state = "program for test"
+			state = "fullstep"
 			entered = False
 			print "Target Board powered."
 			output = ""
@@ -195,12 +204,17 @@ while(testing):
 			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C200F800DP"+str(triggerPin)+"_")
 		if output.count("ok") == 3:
-			state = "halfstep"
 			entered = False
 			print "Full Step test finished."
+			print output
 			fullstepTest =groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			print fullstepTest
+			if testStepperResults(fullstepTest):
+				state = "halfstep"
+			else:
+				state = "board fail"
 			output = ""
+			fullstepTest = []
 	elif state == "halfstep":
 		if not entered:
 			entered = True
@@ -213,12 +227,15 @@ while(testing):
 			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C400F1600DP"+str(triggerPin)+"_")
 		if output.count("ok") == 3:
-			state = "quarterstep"
 			entered = False
 			print "Half Step test finished."
 			halfstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
-			print halfstepTest
+			if testStepperResults(halfstepTest):
+				state = "quarterstep"
+			else:
+				state = "board fail"
 			output = ""
+			halfstepTest = []
 	elif state == "quarterstep":
 		if not entered:
 			entered = True
@@ -231,12 +248,15 @@ while(testing):
 			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C800F3200DP"+str(triggerPin)+"_")
 		if output.count("ok") == 3:
-			state = "sixteenthstep"
 			entered = False
 			print "Quarter Step test finished."
 			quarterstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
-			print quarterstepTest
+			if testStepperResults(quarterstepTest):
+				state = "sixteenthstep"
+			else:
+				state = "board fail"
 			output = ""
+			quarterstepTest = []
 	elif state == "sixteenthstep":
 		if not entered:
 			entered = True
@@ -249,12 +269,15 @@ while(testing):
 			controller.write("M"+str(monitorPin)+"F"+str(monitorFrequency)+"_")
 			target.write("C3200F12800DP"+str(triggerPin)+"_")
 		if output.count("ok") == 3:
-			state = "vrefs"
 			entered = False
 			print "Sixteenth Step test finished."
 			sixteenthstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
-			print sixteenthstepTest
+			if testStepperResults(sixteenthstepTest):
+				state = "vrefs"
+			else:
+				state = "board fail"
 			output = ""
+			sixteenthstepTest = []
 	elif state == "vrefs":
 		if not entered:
 			entered = True
@@ -377,11 +400,14 @@ while(testing):
 			entered = False
 	elif state == "program marlin":
 		print "Disconnecting target from test script..."
+		target.flushInput()
+		target.flushOutput()
 		target.close()
 		target.port = None 
 		print "Programming Marlin..."
 		command = "avrdude -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:/home/steve/UltiMachine/RAMBo-Uploader/Marlinth2.hex"
 		prog = subprocess.Popen(command.split())
+		print "avrdude pid... " + str(prog.pid)
 		state = prog.wait()
 		if state == 0:
 			print "Finished Marlin upload."
