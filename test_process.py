@@ -31,6 +31,9 @@ controller.setDTR(1)
 while not controller.inWaiting():
 	time.sleep(0.1)
 
+targetUSBPowerPin = 9
+isp1PowerPin = 8
+isp2PowerPin = 7 
 monitorPin = 44 #PL5 
 triggerPin = 3 #bed
 monitorFrequency = 1000
@@ -129,48 +132,71 @@ while(testing):
 			output = ""
 			targetOut = ""
 	elif state == "clamping":
-		print "Clamping test jig..."
-		controller.write("H5000_")
-		controller.write("C18700F3000U_")
-		state = "program for test"
+		if not entered:
+			print "Powering up ISP programmers..."
+			controller.write("W"+str(isp1PowerPin)+"H")
+			controller.write("W"+str(isp2PowerPin)+"H")
+			print "Powering target over USB..."
+			controller.write("W"+str(targetUSBPowerPin)+"H")
+			print "Clamping test jig..."
+			controller.write("H5000_")
+			controller.write("C18700F3000U_")
+			entered = True
+		if output.count("ok") == 5:
+			entered = False
+			output = "" 
+			state = "uploading"
 	elif state == "uploading":
 		print "Uploading Bootloader and setting fuses..."
 		avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
 		avr32u2State = avr32u2.wait()
-		print "atmega 32U2: "
 		if avr32u2State == 0:
-			print "Uploaded!"
-			state = "connecting target"
+			print "Uploaded 32u2 bootloader."
+			state = "program for test"
 		else:
 			print "Upload Failed"
 			state = "board fail"
-		avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
-		avr560State = avr2560.wait()
-		print "atmega 2560: "
-		if avr2560State == 0:
-			print "Uploaded!"
-			state = "connecting target"
-		else:
-			print "Upload Failed"
-			state = "board fail"
-			entered = False
+		#avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
+		#avr560State = avr2560.wait()
+		#print "atmega 2560: "
+		#if avr2560State == 0:
+		#	print "Uploaded!"
+		#	state = "connecting target"
+		#else:
+		#	print "Upload Failed"
+		#	state = "board fail"
+		print "Powering down ISP programmers"
+		controller.write("W"+str(isp1PowerPin)+"L")
+		controller.write("W"+str(isp2PowerPin)+"L")
+		entered = False
 	elif state == "program for test":
-		print "Detecting target..."
-		while not os.path.exists(targetPort):
-			time.sleep(0.5)
-		print "Programming for the tests..."
-		command = "avrdude -F -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:"+testFwPath
-		prog = subprocess.Popen(command.split())
-		print "Avrdude pid... " + str(prog.pid)
-		state = prog.wait()
-		if state == 0:
-			print "Finished upload. Waiting for connection..."
-			state = "connecting target"
+		if not entered and :
+			output = ""
+			print "Reconnecting target..."
+			controller.write("W"+str(targetUSBPowerPin)+"L")
+			controller.write("C3000F3000D")
+			entered = True
+		elif output.count("ok") == 2 and entered:
+			controller.write("W"+str(targetUSBPowerPin)+"H")
+			controller.write("C3000F3000U")
+			entered = False
+		if output.count("ok") == 4:
+			print "Detecting target..."
 			while not os.path.exists(targetPort):
 				time.sleep(0.5)
-		else:
-			print "Upload failed"
-			state = "board fail"
+			print "Programming for the tests..."
+			command = "avrdude -F -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:"+testFwPath
+			prog = subprocess.Popen(command.split())
+			print "Avrdude pid... " + str(prog.pid)
+			state = prog.wait()
+			if state == 0:
+				print "Finished upload. Waiting for connection..."
+				state = "connecting target"
+				while not os.path.exists(targetPort):
+					time.sleep(0.5)
+			else:
+				print "Upload failed"
+				state = "board fail"
 			entered = False
 	elif state == "connecting target":
 		print "Attempting connect..."	
@@ -183,9 +209,6 @@ while(testing):
 		targetOut = ""
 	elif state == "powering":
 		if not entered:
-			print "Waiting for homing to complete"
-			while not output.count("ok") == 2:
-				output += controller.read(controller.inWaiting())
 			output = ""
 			print "Powering Board..."
 			controller.write("W3H_")
