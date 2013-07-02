@@ -34,6 +34,7 @@ while not controller.inWaiting():
 monitorPin = 44 #PL5 
 triggerPin = 3 #bed
 monitorFrequency = 1000
+clampLength = 18550
 targetPort = "/dev/ttyACM1"
 testFwPath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
 shipFwPath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
@@ -55,7 +56,15 @@ mosfethighTest = []
 mosfetlowTest = []
 thermistorTest = []
 
+axisNames = ["X","Y","Z","E0","E1"]
+thermistorNames = ["T0","T1","T2"]
+supplyNames = ["Bed Rail","Extruder Rail"]
+
 groupn = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)]
+
+#def analogToVoltage(reading, voltage = 5, bits = 10):
+#	array = []
+#	for reading /pow(2,10))*voltage
 
 #Setup shutdown handlers
 def signal_handler(signal, frame):
@@ -69,34 +78,52 @@ signal.signal(signal.SIGINT, signal_handler)
 
 #Define test cases
 def testVrefs(vals):
-	for x in vals:
-		if not 170 <= x <= 195: 
+	for idx, val in enumerate(vals):
+		if not 170 <= val <= 195:
+			global state
+			state = "board fail"
+			print axisNames[idx] + " axis vref incorrect"
 			return False
 	if max(vals) - min(vals) >= 15:
+		print "Value variance too high!"
+		global state
+		state = "board fail"
 		return False
 	return True 
 
 def testSupply(vals):
-	for x in vals:
-		if not 210 <= x <= 220:
+	for idx, val in enumerate(vals):
+		if not 210 <= val <= 220:
+			global state
+			state = "board fail"
+			print "Test " + supplyNames[idx] + " supply"
 			return False
 	return True
 
 def testThermistor(vals):
-	for x in vals:
-		if not 975 <= x <= 985:
+	for idx, val in enumerate(vals):
+		if not 975 <= val <= 985:
+			global state
+			state = "board fail"
+			print "Check Thermistor " + thermistorNames[idx]
 			return False
 	return True
 
 def testMosfetLow(vals):
-	for x in vals:
-		if not x == 1:
+	for idx, val in enumerate(vals):
+		if not val == 1:
+			global state
+			state = "board fail"
+			print "Check MOSFET " + str(idx)
 			return False
 	return True
 
 def testMosfetHigh(vals):
-	for x in vals:
-		if not x == 0:
+	for idx, val in enumerate(vals):
+		if not val == 0:
+			global state
+			state = "board fail"
+			print "Check MOSFET " + str(idx)
 			return False
 	return True
 
@@ -109,8 +136,10 @@ def testStepperResults(vals):
 			if forward[j] in range(reverse[4-j]-10,reverse[4-j]+10):
 				pass
 			else: 
-				print "Test failed."
-				#return False
+				global state
+				state = "board fail"
+				print "Check "+axisNames[i]+" stepper"
+				return False
 	print "Test passed."
 	return True	
 
@@ -131,7 +160,7 @@ while(testing):
 	elif state == "clamping":
 		print "Clamping test jig..."
 		controller.write("H5000_")
-		controller.write("C18700F3000U_")
+		controller.write("C"+str(clampLength)+"F3000U_")
 		state = "program for test"
 	elif state == "uploading":
 		print "Uploading Bootloader and setting fuses..."
@@ -210,13 +239,9 @@ while(testing):
 		if output.count("ok") == 3:
 			entered = False
 			print "Full Step test finished."
-			print output
 			fullstepTest =groupn(map(int,re.findall(r'\b\d+\b', output)),5)
-			print fullstepTest
 			if testStepperResults(fullstepTest):
 				state = "halfstep"
-			else:
-				state = "board fail"
 			output = ""
 			fullstepTest = []
 	elif state == "halfstep":
@@ -236,8 +261,6 @@ while(testing):
 			halfstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			if testStepperResults(halfstepTest):
 				state = "quarterstep"
-			else:
-				state = "board fail"
 			output = ""
 			halfstepTest = []
 	elif state == "quarterstep":
@@ -257,8 +280,6 @@ while(testing):
 			quarterstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			if testStepperResults(quarterstepTest):
 				state = "sixteenthstep"
-			else:
-				state = "board fail"
 			output = ""
 			quarterstepTest = []
 	elif state == "sixteenthstep":
@@ -278,8 +299,6 @@ while(testing):
 			sixteenthstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			if testStepperResults(sixteenthstepTest):
 				state = "program marlin"
-			else:
-				state = "board fail"
 			output = ""
 			sixteenthstepTest = []
 	elif state == "vrefs":
@@ -297,11 +316,7 @@ while(testing):
 			vrefTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print vrefTest
 			if testVrefs(vrefTest):
-				print "Test passed."
 				state = "fullstep"
-			if not testVrefs(vrefTest):
-				print "Test failed."
-				state = "board fail"		
 			output = ""
 			targetOut = ""
 	elif state == "supply test":
@@ -316,11 +331,7 @@ while(testing):
 			supplyTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print supplyTest	
 			if testSupply(supplyTest):
-				print "Test passed."
 				state = "mosfet high"
-			if not testSupply(supplyTest):
-				print "Test failed."
-				state = "board fail"		
 			output = ""
 			targetOut = ""
 	elif state == "mosfet high":
@@ -346,11 +357,7 @@ while(testing):
 			mosfethighTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print mosfethighTest
 			if testMosfetHigh(mosfethighTest):
-				print "Test Passed."
 				state = "mosfet low"
-			if not testMosfetHigh(mosfethighTest):
-				print "Test failed."
-				state = "board fail"
 			output = ""
 			targetOut = ""
 	elif state == "mosfet low":
@@ -376,11 +383,7 @@ while(testing):
 			mosfetlowTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print mosfetlowTest
 			if testMosfetLow(mosfetlowTest):
-				print "Test Passed."
 				state = "vrefs"
-			if not testMosfetLow(mosfetlowTest):
-				print "Test failed."
-				state = "board fail"
 			output = ""
 			targetOut = ""
 	elif state == "thermistors":
@@ -395,11 +398,7 @@ while(testing):
 			thermistorTest = map(int,re.findall(r'\b\d+\b', targetOut)) 
 			print thermistorTest
 			if testThermistor(thermistorTest):
-				print "Test passed."
 				state = "supply test"
-			if not testThermistor(thermistorTest):
-				print "Test failed."
-				state = "board fail"	
 			targetOut = ""
 			entered = False
 	elif state == "program marlin":
