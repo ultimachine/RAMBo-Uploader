@@ -2,6 +2,7 @@
 
 from serial import Serial, SerialException
 from time import gmtime, strftime
+from termcolor import colored
 import os
 import sys
 import traceback
@@ -80,38 +81,38 @@ signal.signal(signal.SIGINT, signal_handler)
 def testVrefs(vals):
 	for idx, val in enumerate(vals):
 		if not 170 <= val <= 195:
-			print axisNames[idx] + " axis vref incorrect"
+			print colored(axisNames[idx] + " axis vref incorrect", 'red')
 			return False
 	if max(vals) - min(vals) >= 15:
-		print "Value variance too high!"
+		print colored("Value variance too high!",'red')
 		return False
 	return True 
 
 def testSupply(vals):
 	for idx, val in enumerate(vals):
 		if not 210 <= val <= 220:
-			print "Test " + supplyNames[idx] + " supply"
+			print colored("Test " + supplyNames[idx] + " supply", 'red')
 			return False
 	return True
 
 def testThermistor(vals):
 	for idx, val in enumerate(vals):
 		if not 975 <= val <= 985:
-			print "Check Thermistor " + thermistorNames[idx]
+			print colored("Check Thermistor " + thermistorNames[idx], 'red')
 			return False
 	return True
 
 def testMosfetLow(vals):
 	for idx, val in enumerate(vals):
 		if not val == 1:
-			print "Check MOSFET " + str(idx)
+			print colored("Check MOSFET " + str(idx), 'red')
 			return False
 	return True
 
 def testMosfetHigh(vals):
 	for idx, val in enumerate(vals):
 		if not val == 0:
-			print "Check MOSFET " + str(idx)
+			print colored("Check MOSFET " + str(idx), 'red')
 			return False
 	return True
 
@@ -124,7 +125,7 @@ def testStepperResults(vals):
 			if forward[j] in range(reverse[4-j]-10,reverse[4-j]+10):
 				pass
 			else: 
-				print "Check "+axisNames[i]+" stepper"
+				print colored("Check "+axisNames[i]+" stepper", 'red')
 				return False
 	return True	
 
@@ -433,9 +434,9 @@ while(testing):
 		passed &= testStepperResults(sixteenthstepTest)
 
 		if not passed:
-			print "Board failed"
+			print colored("Board failed",'red')
 		else:
-			print "Board passed"
+			print colored("Board passed",'green')
 		state = "finished"
 	elif state == "finished":
 		print "Powering off target"
