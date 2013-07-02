@@ -43,7 +43,7 @@ stepperSpeed = 100
 testing = True
 state = "start"
 entered = False
-keyboard = ""
+errors = ""
 output = ""
 targetOut = ""
 refs = []
@@ -79,44 +79,50 @@ signal.signal(signal.SIGINT, signal_handler)
 
 #Define test cases
 def testVrefs(vals):
+	global errors
 	for idx, val in enumerate(vals):
 		if not 170 <= val <= 195:
-			print colored(axisNames[idx] + " axis vref incorrect", 'red')
+			errors += colored(axisNames[idx] + " axis vref incorrect\n", 'red')
 			return False
 	if max(vals) - min(vals) >= 15:
-		print colored("Value variance too high!",'red')
+		errors +=  colored("Vref variance too high!\n",'red')
 		return False
 	return True 
 
 def testSupply(vals):
+	global errors
 	for idx, val in enumerate(vals):
 		if not 210 <= val <= 220:
-			print colored("Test " + supplyNames[idx] + " supply", 'red')
+			errors += colored("Test " + supplyNames[idx] + " supply\n", 'red')
 			return False
 	return True
 
 def testThermistor(vals):
+	global errors
 	for idx, val in enumerate(vals):
 		if not 975 <= val <= 985:
-			print colored("Check Thermistor " + thermistorNames[idx], 'red')
+			errors += colored("Check Thermistor" + thermistorNames[idx] + "\n", 'red')
 			return False
 	return True
 
 def testMosfetLow(vals):
+	global errors
 	for idx, val in enumerate(vals):
 		if not val == 1:
-			print colored("Check MOSFET " + str(idx), 'red')
+			errors += colored("Check MOSFET " + str(idx) + "\n", 'red')
 			return False
 	return True
 
 def testMosfetHigh(vals):
+	global errors
 	for idx, val in enumerate(vals):
 		if not val == 0:
-			print colored("Check MOSFET " + str(idx), 'red')
+			errors += colored("Check MOSFET " + str(idx) + "\n", 'red')
 			return False
 	return True
 
 def testStepperResults(vals):
+	global errors
 	for i in range(5):
 		forward = vals[i]
 		reverse = vals[i+5]
@@ -125,7 +131,7 @@ def testStepperResults(vals):
 			if forward[j] in range(reverse[4-j]-10,reverse[4-j]+10):
 				pass
 			else: 
-				print colored("Check "+axisNames[i]+" stepper", 'red')
+				errors += colored("Check "+axisNames[i]+" stepper\n", 'red')
 				return False
 	return True	
 
@@ -432,12 +438,15 @@ while(testing):
 
 		print "Sixteeth step results"
 		passed &= testStepperResults(sixteenthstepTest)
-
+		
+		print errors
+		
 		if not passed:
 			print colored("Board failed",'red')
 		else:
 			print colored("Board passed",'green')
 		state = "finished"
+		errors = ""
 	elif state == "finished":
 		print "Powering off target"
 		controller.write("W3L_")
