@@ -16,7 +16,7 @@ import threading
 print "RAMBo Test Server"
 
 try:
-	controller = Serial(port = "/dev/ttyACM0", baudrate = 115200)
+	controller = Serial(port = "/dev/ttyACM1", baudrate = 115200)
 	target = Serial(port = None, baudrate = 115200)
 except SerialException:
 	print "Error, could not connect"
@@ -35,7 +35,7 @@ monitorPin = 44 #PL5
 triggerPin = 3 #bed
 monitorFrequency = 1000
 clampLength = 18550
-targetPort = "/dev/ttyACM1"
+targetPort = "/dev/ttyACM2"
 testFwPath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
 shipFwPath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 stepperSpeed = 100
@@ -136,17 +136,20 @@ while(testing):
 	#raw_input("Press Enter to continue...")
 	if(target.port): 
 		targetOut += target.read(target.inWaiting())
+
 	if state == "start":
 		if "start" in output:
 			state = "clamping"
 			print "Test started at " + strftime("%Y-%m-%d %H:%M:%S", gmtime())
 			output = ""
 			targetOut = ""
+
 	elif state == "clamping":
 		print "Clamping test jig..."
 		controller.write("H5000_")
 		controller.write("C"+str(clampLength)+"F3000U_")
 		state = "program for test"
+
 	elif state == "uploading":
 		print "Uploading Bootloader and setting fuses..."
 		avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
@@ -168,6 +171,7 @@ while(testing):
 			print "Upload Failed"
 			state = "board fail"
 			entered = False
+
 	elif state == "program for test":
 		print "Detecting target..."
 		while not os.path.exists(targetPort):
@@ -186,6 +190,7 @@ while(testing):
 			print "Upload failed"
 			state = "board fail"
 			entered = False
+
 	elif state == "connecting target":
 		print "Attempting connect..."	
 		target.port = targetPort
@@ -195,6 +200,7 @@ while(testing):
 		print "Target port : " + target.port 	
 		state = "powering"
 		targetOut = ""
+
 	elif state == "powering":
 		if not entered:
 			print "Waiting for homing to complete"
@@ -210,6 +216,7 @@ while(testing):
 			print "Target Board powered."
 			output = ""
 			targetOut = ""
+
 	elif state == "fullstep":
 		if not entered:
 			entered = True
@@ -227,6 +234,7 @@ while(testing):
 			fullstepTest =groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			state = "halfstep"
 			output = ""
+
 	elif state == "halfstep":
 		if not entered:
 			entered = True
@@ -244,6 +252,7 @@ while(testing):
 			halfstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			state = "quarterstep"
 			output = ""
+
 	elif state == "quarterstep":
 		if not entered:
 			entered = True
@@ -261,6 +270,7 @@ while(testing):
 			quarterstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			state = "sixteenthstep"
 			output = ""
+
 	elif state == "sixteenthstep":
 		if not entered:
 			entered = True
@@ -278,6 +288,7 @@ while(testing):
 			sixteenthstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
 			state = "program marlin"
 			output = ""
+
 	elif state == "vrefs":
 		if not entered:
 			entered = True
@@ -293,6 +304,7 @@ while(testing):
 			state = "fullstep"
 			output = ""
 			targetOut = ""
+
 	elif state == "supply test":
 		if not entered:
 			entered = True
@@ -305,6 +317,7 @@ while(testing):
 			state = "mosfet high"
 			output = ""
 			targetOut = ""
+
 	elif state == "mosfet high":
 		if not entered:
 			entered = True
@@ -328,6 +341,7 @@ while(testing):
 			state = "mosfet low"
 			output = ""
 			targetOut = ""
+
 	elif state == "mosfet low":
 		if not entered:
 			entered = True
@@ -351,6 +365,7 @@ while(testing):
 			state = "vrefs"
 			output = ""
 			targetOut = ""
+
 	elif state == "thermistors":
 		if not entered:
 			entered = True
@@ -363,6 +378,7 @@ while(testing):
 			state = "supply test"
 			targetOut = ""
 			entered = False
+
 	elif state == "program marlin":
 		print "Disconnecting target from test script..."
 		target.flushInput()
@@ -381,6 +397,7 @@ while(testing):
 			print "Upload failed"
 			state = "board fail"
 			entered = False
+
 	elif state == "processing":
 		passed = True
 		print "Supply voltage values..."
@@ -423,7 +440,7 @@ while(testing):
 	elif state == "finished":
 		print "Powering off target"
 		controller.write("W3L_")
-		print "Preparing Test Jig for next board.."
+		print "Preparing Test Jig for next board..."
 		controller.write("H5000_")
 		state = "start"	
 
