@@ -59,7 +59,7 @@ thermistorTest = []
 
 axisNames = ["X","Y","Z","E0","E1"]
 thermistorNames = ["T0","T1","T2"]
-supplyNames = ["Bed Rail","Extruder Rail"]
+supplyNames = ["Extruder Rail","Bed Rail"]
 
 groupn = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)]
 
