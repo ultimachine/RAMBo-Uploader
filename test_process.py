@@ -41,6 +41,7 @@ shipFwPath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 stepperSpeed = 100
 testing = True
 state = "start"
+boardFail = False
 entered = False
 keyboard = ""
 output = ""
@@ -78,15 +79,16 @@ signal.signal(signal.SIGINT, signal_handler)
 
 #Define test cases
 def testVrefs(vals):
+	global state, boardFail
 	for idx, val in enumerate(vals):
 		if not 170 <= val <= 195:
-			global state
+			boardFail = True
 			state = "board fail"
 			print axisNames[idx] + " axis vref incorrect"
 			return False
 	if max(vals) - min(vals) >= 15:
 		print "Value variance too high!"
-		global state
+		boardFail = True
 		state = "board fail"
 		return False
 	return True 
@@ -94,7 +96,8 @@ def testVrefs(vals):
 def testSupply(vals):
 	for idx, val in enumerate(vals):
 		if not 210 <= val <= 220:
-			global state
+			global state, boardFail
+			boardFail = True
 			state = "board fail"
 			print "Test " + supplyNames[idx] + " supply"
 			return False
@@ -103,7 +106,8 @@ def testSupply(vals):
 def testThermistor(vals):
 	for idx, val in enumerate(vals):
 		if not 975 <= val <= 985:
-			global state
+			global state, boardFail
+			boardFail = True
 			state = "board fail"
 			print "Check Thermistor " + thermistorNames[idx]
 			return False
@@ -112,7 +116,8 @@ def testThermistor(vals):
 def testMosfetLow(vals):
 	for idx, val in enumerate(vals):
 		if not val == 1:
-			global state
+			global state, boardFail
+			boardFail = True
 			state = "board fail"
 			print "Check MOSFET " + str(idx)
 			return False
@@ -121,7 +126,8 @@ def testMosfetLow(vals):
 def testMosfetHigh(vals):
 	for idx, val in enumerate(vals):
 		if not val == 0:
-			global state
+			global state, boardFail
+			boardFail = True
 			state = "board fail"
 			print "Check MOSFET " + str(idx)
 			return False
@@ -136,7 +142,8 @@ def testStepperResults(vals):
 			if forward[j] in range(reverse[4-j]-10,reverse[4-j]+10):
 				pass
 			else: 
-				global state
+				global state, boardFail
+				boardFail = True
 				state = "board fail"
 				print "Check "+axisNames[i]+" stepper"
 				return False
@@ -240,10 +247,9 @@ while(testing):
 			entered = False
 			print "Full Step test finished."
 			fullstepTest =groupn(map(int,re.findall(r'\b\d+\b', output)),5)
-			if testStepperResults(fullstepTest):
-				state = "halfstep"
+			testStepperResults(fullstepTest)
+			state = "halfstep"
 			output = ""
-			fullstepTest = []
 	elif state == "halfstep":
 		if not entered:
 			entered = True
@@ -259,10 +265,9 @@ while(testing):
 			entered = False
 			print "Half Step test finished."
 			halfstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
-			if testStepperResults(halfstepTest):
-				state = "quarterstep"
+			testStepperResults(halfstepTest)
+			state = "quarterstep"
 			output = ""
-			halfstepTest = []
 	elif state == "quarterstep":
 		if not entered:
 			entered = True
@@ -278,10 +283,9 @@ while(testing):
 			entered = False
 			print "Quarter Step test finished."
 			quarterstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
-			if testStepperResults(quarterstepTest):
-				state = "sixteenthstep"
+			testStepperResults(quarterstepTest)
+			state = "sixteenthstep"
 			output = ""
-			quarterstepTest = []
 	elif state == "sixteenthstep":
 		if not entered:
 			entered = True
@@ -297,10 +301,9 @@ while(testing):
 			entered = False
 			print "Sixteenth Step test finished."
 			sixteenthstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
-			if testStepperResults(sixteenthstepTest):
-				state = "program marlin"
+			testStepperResults(sixteenthstepTest)
+			state = "program marlin"
 			output = ""
-			sixteenthstepTest = []
 	elif state == "vrefs":
 		if not entered:
 			entered = True
@@ -315,8 +318,8 @@ while(testing):
 			print "Vref values..."
 			vrefTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print vrefTest
-			if testVrefs(vrefTest):
-				state = "fullstep"
+			testVrefs(vrefTest)
+			state = "fullstep"
 			output = ""
 			targetOut = ""
 	elif state == "supply test":
@@ -330,8 +333,8 @@ while(testing):
 			print "Supply voltage values..."
 			supplyTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print supplyTest	
-			if testSupply(supplyTest):
-				state = "mosfet high"
+			testSupply(supplyTest)
+			state = "mosfet high"
 			output = ""
 			targetOut = ""
 	elif state == "mosfet high":
@@ -356,8 +359,8 @@ while(testing):
 			print "Mosfet output values..."
 			mosfethighTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print mosfethighTest
-			if testMosfetHigh(mosfethighTest):
-				state = "mosfet low"
+			testMosfetHigh(mosfethighTest)
+			state = "mosfet low"
 			output = ""
 			targetOut = ""
 	elif state == "mosfet low":
@@ -382,8 +385,8 @@ while(testing):
 			print "Mosfet output values..."
 			mosfetlowTest = map(int,re.findall(r'\b\d+\b', output)) 
 			print mosfetlowTest
-			if testMosfetLow(mosfetlowTest):
-				state = "vrefs"
+			testMosfetLow(mosfetlowTest)
+			state = "vrefs"
 			output = ""
 			targetOut = ""
 	elif state == "thermistors":
@@ -397,8 +400,8 @@ while(testing):
 			print "Target thermistor readings..."
 			thermistorTest = map(int,re.findall(r'\b\d+\b', targetOut)) 
 			print thermistorTest
-			if testThermistor(thermistorTest):
-				state = "supply test"
+			testThermistor(thermistorTest)
+			state = "supply test"
 			targetOut = ""
 			entered = False
 	elif state == "program marlin":
