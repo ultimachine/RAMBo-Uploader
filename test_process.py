@@ -13,6 +13,9 @@ import sys
 import subprocess 
 import re
 import threading
+import argparse
+import avrdude
+import atmega
 
 print "RAMBo Test Server"
 
@@ -29,16 +32,27 @@ print "Waiting for controller initialization..."
 controller.setDTR(0)
 time.sleep(1)
 controller.setDTR(1)
+
+timeout = {'count': 0, 'state': False, 'time': 5} # dictionary to organize timeout values
+
 while not controller.inWaiting():
 	time.sleep(0.1)
+	timeout.count += 0.1
+	if timeout.count >= timeout.time: #5 second timeout
+		timeout.state = True
+		print "Could not connect to Test Controller, try hitting reset while \
+               waiting for initialization..."
+		controller.close()
+		sys.exit(0)
 
+        
 monitorPin = 44 #PL5 
 triggerPin = 3 #bed
 monitorFrequency = 1000
 clampLength = 18550
 targetPort = "/dev/ttyACM2"
-testFwPath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
-shipFwPath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
+testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
+vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 stepperSpeed = 100
 testing = True
 state = "start"
@@ -66,6 +80,23 @@ groupn = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)]
 #def analogToVoltage(reading, voltage = 5, bits = 10):
 #	array = []
 #	for reading /pow(2,10))*voltage
+
+#Setup target test firmware object to pass to AVRDUDE.
+testFirmware = Atmega()
+testFirmware.name = "atmega2560"
+testFirmware.bootloader = testFirmwarePath
+
+#Setup target vendor firmware object to pass to AVRDUDE. 
+vendorFirmware = Atmega()
+vendorFirmware.name = "atmega2560"
+vendorFirmware.bootloader = vendorFirmwarePath
+
+#Setup up avrdude config for upload to an Arduino.
+avrdude = Avrdude()
+avrdude.path = "/usr/bin/avrdude"
+avrdude.programmer = "stk200v2"
+avrdude.port = targetPort
+avrdude.baudrate = 115200
 
 #Setup shutdown handlers
 def signal_handler(signal, frame):
@@ -183,12 +214,11 @@ while(testing):
 		print "Detecting target..."
 		while not os.path.exists(targetPort):
 			time.sleep(0.5)
-		print "Programming for the tests..."
-		command = "avrdude -F -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:"+testFwPath
-		prog = subprocess.Popen(command.split())
-		print "Avrdude pid... " + str(prog.pid)
-		state = prog.wait()
-		if state == 0:
+			
+		print "Programming target with test firmware..."
+		finishedUpload = avrdude.upload(testFirmware, timeout = 25)
+		
+		if finishedUpload:
 			print "Finished upload. Waiting for connection..."
 			state = "connecting target"
 			while not os.path.exists(targetPort):
@@ -392,12 +422,9 @@ while(testing):
 		target.flushOutput()
 		target.close()
 		target.port = None 
-		print "Programming Marlin..."
-		command = "avrdude -patmega2560 -cstk500v2 -P"+targetPort+" -b115200 -D -Uflash:w:"+shipFwPath
-		prog = subprocess.Popen(command.split())
-		print "avrdude pid... " + str(prog.pid)
-		state = prog.wait()
-		if state == 0:
+		print "Programming target with vendor firmware..."
+		finishedUpload = avrdude.upload(vendorFirmware, timeout = 30)
+		if finishedUpload:
 			print "Finished Marlin upload."
 			state = "processing"
 		else:
@@ -448,9 +475,8 @@ while(testing):
 		state = "finished"
 		errors = ""
 	elif state == "finished":
-		print "Powering off target"
-		controller.write("W3L_")
 		print "Preparing Test Jig for next board..."
+		controller.write("W3L_")
 		controller.write("H5000_")
 		state = "start"	
 
