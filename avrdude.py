@@ -13,7 +13,7 @@ class Avrdude():
         self.port = ""
         self.baudrate = ""
         self.configFile = ""
-        self.autoEraseFlash = ""
+        self.autoEraseFlash = True
 
     def upload(self, target, timeout = 25):
         #assemble argument array
@@ -41,7 +41,7 @@ class Avrdude():
 
         print(cmd)
         #call avrdude as a subprocess
-        self.uploadProcess = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        self.uploadProcess = subprocess.Popen(cmd)
         time.sleep(timeout)
         if not self.uploadProcess.poll(): # still alive
             self.uploadProcess.kill()
