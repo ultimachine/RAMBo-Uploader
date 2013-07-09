@@ -175,7 +175,7 @@ while(testing):
 
     elif state == "powering":
         if not entered:
-            print "Waiting for homing to complete"
+            print "Waiting for homing to complete..."
             while not output.count("ok") == 2:
                 output += controller.read(controller.inWaiting())
             output = ""
