@@ -14,13 +14,13 @@ import subprocess
 import re
 import threading
 import argparse
-import avrdude
-import atmega
+from avrdude import *
+from atmega import *
 
 print "RAMBo Test Server"
 
 try:
-	controller = Serial(port = "/dev/ttyACM1", baudrate = 115200)
+	controller = Serial(port = "/dev/ttyACM0", baudrate = 115200)
 	target = Serial(port = None, baudrate = 115200)
 except SerialException:
 	print "Error, could not connect"
@@ -50,7 +50,7 @@ monitorPin = 44 #PL5
 triggerPin = 3 #bed
 monitorFrequency = 1000
 clampLength = 18550
-targetPort = "/dev/ttyACM2"
+targetPort = "/dev/ttyACM1"
 testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
 vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 stepperSpeed = 100
@@ -96,7 +96,7 @@ avrdude = Avrdude()
 avrdude.path = "/usr/bin/avrdude"
 avrdude.programmer = "stk200v2"
 avrdude.port = targetPort
-avrdude.baudrate = 115200
+avrdude.baudrate = "115200"
 
 #Setup shutdown handlers
 def signal_handler(signal, frame):
