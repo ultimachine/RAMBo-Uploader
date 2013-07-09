@@ -1,7 +1,7 @@
 #!/usr/bin/env python 
 
 from serial import Serial, SerialException
-from time import gmtime, strftime
+import time
 from termcolor import colored
 import os
 import sys
@@ -112,7 +112,7 @@ while(testing):
     if state == "start":
         if "start" in output:
             state = "clamping"
-            print "Test started at " + strftime("%Y-%m-%d %H:%M:%S", gmtime())
+            print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             output = ""
             targetOut = ""
 
@@ -153,7 +153,8 @@ while(testing):
         finishedUpload = avrdude.upload(testFirmware, timeout = 10)
         
         if finishedUpload:
-            print "Finished upload. Waiting for connection..."
+            print "Finished."
+            print "Waiting for connection..."
             state = "connecting target"
             while not os.path.exists(targetPort):
                 time.sleep(0.5)
@@ -184,7 +185,6 @@ while(testing):
         if "ok" in output:
             state = "thermistors"
             entered = False
-            print "Target Board powered."
             output = ""
             targetOut = ""
 
@@ -201,7 +201,6 @@ while(testing):
             target.write("C200F800DP"+str(triggerPin)+"_")
         if output.count("ok") == 3:
             entered = False
-            print "Full Step test finished."
             testProcessor.fullStep = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
             state = "halfstep"
             output = ""
@@ -219,7 +218,6 @@ while(testing):
             target.write("C400F1600DP"+str(triggerPin)+"_")
         if output.count("ok") == 3:
             entered = False
-            print "Half Step test finished."
             testProcessor.halfStep = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
             state = "quarterstep"
             output = ""
@@ -237,7 +235,6 @@ while(testing):
             target.write("C800F3200DP"+str(triggerPin)+"_")
         if output.count("ok") == 3:
             entered = False
-            print "Quarter Step test finished."
             testProcessor.quarterStep = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
             state = "sixteenthstep"
             output = ""
@@ -255,7 +252,6 @@ while(testing):
             target.write("C3200F12800DP"+str(triggerPin)+"_")
         if output.count("ok") == 3:
             entered = False
-            print "Sixteenth Step test finished."
             testProcessor.sixteenthStep = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
             state = "program marlin"
             output = ""
@@ -359,10 +355,9 @@ while(testing):
         print "Programming target with vendor firmware..."
         finishedUpload = avrdude.upload(vendorFirmware, timeout = 20)
         if finishedUpload:
-            print "Finished Marlin upload."
             state = "processing"
         else:
-            print "Upload failed"
+            print "Upload failed!"
             state = "board fail"
             entered = False
 
