@@ -97,6 +97,7 @@ avrdude.path = "/usr/bin/avrdude"
 avrdude.programmer = "stk200v2"
 avrdude.port = targetPort
 avrdude.baudrate = 115200
+avrdude.autoEraseFlash = True
 
 #Setup shutdown handlers
 def signal_handler(signal, frame):
