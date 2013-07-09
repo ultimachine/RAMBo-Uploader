@@ -109,11 +109,23 @@ class TestProcessor():
         passed &= self.testStepperResults(self.sixteenthStep)
         
         if not passed:
-            self.errors = colored("Board failed\n",'red') + self.errors
+            self.errors = colored("Board failed\n", 'red') + self.errors
         else:
-            self.errors = colored("Board passed\n",'green') + self.errors
+            self.errors = colored("Board passed\n", 'green') + self.errors
         return passed
         
     def showErrors(self):
         print self.errors
+
+    def restart(self):
+        self.fullStep = []
+        self.halfStep = []
+        self.quarterStep = []
+        self.sixteenthStep = []
+        self.vrefs = []
+        self.supplys = []
+        self.mosfetHigh = []
+        self.mosfetLow = []
+        self.thermistors = []
         self.errors = ""
+
