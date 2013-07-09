@@ -14,6 +14,7 @@ import subprocess
 import re
 import threading
 import argparse
+from testprocessor import *
 from avrdude import *
 from atmega import *
 
@@ -60,20 +61,6 @@ entered = False
 errors = ""
 output = ""
 targetOut = ""
-refs = []
-fullstepTest = []
-halfstepTest = []
-quarterstepTest = []
-sixteenthstepTest = []
-vrefTest = []
-supplyTest = []
-mosfethighTest = []
-mosfetlowTest = []
-thermistorTest = []
-
-axisNames = ["X","Y","Z","E0","E1"]
-thermistorNames = ["T0","T1","T2"]
-supplyNames = ["Extruder Rail","Bed Rail"]
 
 groupn = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)]
 
@@ -99,6 +86,10 @@ avrdude.port = targetPort
 avrdude.baudrate = "115200"
 avrdude.autoEraseFlash = True
 
+#Define our test processor
+testProcessor = TestProcessor()
+
+
 #Setup shutdown handlers
 def signal_handler(signal, frame):
     print "Shutting down test server..."
@@ -108,64 +99,6 @@ def signal_handler(signal, frame):
     target.close()
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
-
-#Define test cases
-def testVrefs(vals):
-    global errors
-    for idx, val in enumerate(vals):
-        if not 170 <= val <= 195:
-            errors += colored(axisNames[idx] + " axis vref incorrect\n", 'red')
-            return False
-    if max(vals) - min(vals) >= 15:
-        errors +=  colored("Vref variance too high!\n",'red')
-        return False
-    return True 
-
-def testSupply(vals):
-    global errors
-    for idx, val in enumerate(vals):
-        if not 210 <= val <= 220:
-            errors += colored("Test " + supplyNames[idx] + " supply\n", 'red')
-            return False
-    return True
-
-def testThermistor(vals):
-    global errors
-    for idx, val in enumerate(vals):
-        if not 975 <= val <= 985:
-            errors += colored("Check Thermistor" + thermistorNames[idx] + "\n", 'red')
-            return False
-    return True
-
-def testMosfetLow(vals):
-    global errors
-    for idx, val in enumerate(vals):
-        if not val == 1:
-            errors += colored("Check MOSFET " + str(idx) + "\n", 'red')
-            return False
-    return True
-
-def testMosfetHigh(vals):
-    global errors
-    for idx, val in enumerate(vals):
-        if not val == 0:
-            errors += colored("Check MOSFET " + str(idx) + "\n", 'red')
-            return False
-    return True
-
-def testStepperResults(vals):
-    global errors
-    for i in range(5):
-        forward = vals[i]
-        reverse = vals[i+5]
-        print "Forward -> " + str(forward) + "Reverse -> " + str(reverse)
-        for j in range(5):
-            if forward[j] in range(reverse[4-j]-10,reverse[4-j]+10):
-                pass
-            else: 
-                errors += colored("Check "+axisNames[i]+" stepper\n", 'red')
-                return False
-    return True 
 
 print "Test server started. Press CTRL-C to exit."
 print "Monitoring test controller..."
@@ -217,7 +150,7 @@ while(testing):
             time.sleep(0.5)
             
         print "Programming target with test firmware..."
-        finishedUpload = avrdude.upload(testFirmware, timeout = 25)
+        finishedUpload = avrdude.upload(testFirmware, timeout = 10)
         
         if finishedUpload:
             print "Finished upload. Waiting for connection..."
@@ -269,7 +202,7 @@ while(testing):
         if output.count("ok") == 3:
             entered = False
             print "Full Step test finished."
-            fullstepTest =groupn(map(int,re.findall(r'\b\d+\b', output)),5)
+            testProcessor.fullStep = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
             state = "halfstep"
             output = ""
 
@@ -287,7 +220,7 @@ while(testing):
         if output.count("ok") == 3:
             entered = False
             print "Half Step test finished."
-            halfstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
+            testProcessor.halfStep = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
             state = "quarterstep"
             output = ""
 
@@ -305,7 +238,7 @@ while(testing):
         if output.count("ok") == 3:
             entered = False
             print "Quarter Step test finished."
-            quarterstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
+            testProcessor.quarterStep = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
             state = "sixteenthstep"
             output = ""
 
@@ -323,7 +256,7 @@ while(testing):
         if output.count("ok") == 3:
             entered = False
             print "Sixteenth Step test finished."
-            sixteenthstepTest = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
+            testProcessor.sixteenthStep = groupn(map(int,re.findall(r'\b\d+\b', output)),5)
             state = "program marlin"
             output = ""
 
@@ -338,7 +271,7 @@ while(testing):
             print "Testing stepper driver references..."
         if output.count("ok") == 5:
             entered = False
-            vrefTest = map(int,re.findall(r'\b\d+\b', output)) 
+            testProcessor.vrefs = map(int,re.findall(r'\b\d+\b', output)) 
             state = "fullstep"
             output = ""
             targetOut = ""
@@ -351,7 +284,7 @@ while(testing):
             print "Testing supply voltages..."
         if output.count("ok") == 2:
             entered = False
-            supplyTest = map(int,re.findall(r'\b\d+\b', output)) 
+            testProcessor.supplys = map(int,re.findall(r'\b\d+\b', output)) 
             state = "mosfet high"
             output = ""
             targetOut = ""
@@ -375,7 +308,7 @@ while(testing):
             controller.write("Q30_")
         if output.count("ok") == 6:
             entered = False
-            mosfethighTest = map(int,re.findall(r'\b\d+\b', output)) 
+            testProcessor.mosfetHigh = map(int,re.findall(r'\b\d+\b', output)) 
             state = "mosfet low"
             output = ""
             targetOut = ""
@@ -399,7 +332,7 @@ while(testing):
             controller.write("Q30_")
         if output.count("ok") == 6:
             entered = False
-            mosfetlowTest = map(int,re.findall(r'\b\d+\b', output)) 
+            testProcessor.mosfetLow = map(int,re.findall(r'\b\d+\b', output)) 
             state = "vrefs"
             output = ""
             targetOut = ""
@@ -412,7 +345,7 @@ while(testing):
             target.write("A1_")
             target.write("A2_")
         if targetOut.count("ok") == 3:
-            thermistorTest = map(int,re.findall(r'\b\d+\b', targetOut)) 
+            testProcessor.thermistors = map(int,re.findall(r'\b\d+\b', targetOut)) 
             state = "supply test"
             targetOut = ""
             entered = False
@@ -424,7 +357,7 @@ while(testing):
         target.close()
         target.port = None 
         print "Programming target with vendor firmware..."
-        finishedUpload = avrdude.upload(vendorFirmware, timeout = 30)
+        finishedUpload = avrdude.upload(vendorFirmware, timeout = 20)
         if finishedUpload:
             print "Finished Marlin upload."
             state = "processing"
@@ -434,47 +367,15 @@ while(testing):
             entered = False
 
     elif state == "processing":
-        passed = True
-        print "Supply voltage values..."
-        print supplyTest    
-        passed &= testSupply(supplyTest)    
-
-        print "Vref values..."
-        print vrefTest
-        passed &= testVrefs(vrefTest)
-
-        print "Target thermistor readings..."
-        print thermistorTest
-        passed &= testThermistor(thermistorTest)
-
-        print "Mosfet high values..."
-        print mosfethighTest
-        passed &= testMosfetHigh(mosfethighTest)
-
-        print "Mosfet low values..."
-        print mosfetlowTest
-        passed &= testMosfetLow(mosfetlowTest)
-
-        print "Full step results"
-        passed &= testStepperResults(fullstepTest)
-
-        print "Half step results"
-        passed &= testStepperResults(halfstepTest)
-
-        print "Quarter step results"
-        passed &= testStepperResults(quarterstepTest)
-
-        print "Sixteeth step results"
-        passed &= testStepperResults(sixteenthstepTest)
-        
-        print errors
-        
-        if not passed:
-            print colored("Board failed",'red')
-        else:
-            print colored("Board passed",'green')
+        testProcessor.verifyAllTests()
         state = "finished"
-        errors = ""
+        testProcessor.showErrors()
+    
+    elif state == "board fail":
+        print "Unable to complete testing process!"
+        print colored("Board failed",'red')
+        state = "finished"
+        output = ""
     elif state == "finished":
         print "Preparing Test Jig for next board..."
         controller.write("W3L_")
