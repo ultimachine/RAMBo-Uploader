@@ -15,13 +15,14 @@ class TestProcessor():
         self.axisNames = ["X","Y","Z","E0","E1"]
         self.thermistorNames = ["T0","T1","T2"]
         self.supplyNames = ["Extruder Rail","Bed Rail"]
-        
+        self.failedAxes = [False,False,False,False,False]
+
     def testVrefs(self):
         passed = True
         for idx, val in enumerate(self.vrefs):
             if not 170 <= val <= 195:
                 self.errors += colored(self.axisNames[idx] + " axis vref incorrect\n", 'red')
-                passsed &= False
+                passed &= False
         if max(self.vrefs) - min(self.vrefs) >= 15:
             self.errors +=  colored("Vref variance too high!\n",'red')
             passed &= False
@@ -66,10 +67,10 @@ class TestProcessor():
             reverse = vals[i+5]
             print "Forward -> " + str(forward) + "Reverse -> " + str(reverse)
             for j in range(5):
-                if forward[j] in range(reverse[4-j]-10,reverse[4-j]+10):
-                    pass
-                else: 
+	       validRange = range(reverse[4-j]-10,reverse[4-j]+10)
+               if not forward[j] in validRange and not self.failedAxes[i]: 
                     self.errors += colored("Check "+self.axisNames[i]+" stepper\n", 'red')
+                    self.failedAxes[i] = True
                     passed = False
         return passed 
         
@@ -108,6 +109,8 @@ class TestProcessor():
         print "Sixteeth step results"
         passed &= self.testStepperResults(self.sixteenthStep)
         
+        self.failedAxes = [False,False,False,False,False]
+
         if not passed:
             self.errors = colored("Board failed\n",'red') + self.errors
         else:
