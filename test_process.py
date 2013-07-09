@@ -365,12 +365,14 @@ while(testing):
         testProcessor.verifyAllTests()
         state = "finished"
         testProcessor.showErrors()
-    
+        testProcessor.restart()
+        
     elif state == "board fail":
         print "Unable to complete testing process!"
         print colored("Board failed",'red')
         state = "finished"
         output = ""
+        
     elif state == "finished":
         print "Preparing Test Jig for next board..."
         controller.write("W3L_")

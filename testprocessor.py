@@ -108,8 +108,6 @@ class TestProcessor():
 
         print "Sixteeth step results"
         passed &= self.testStepperResults(self.sixteenthStep)
-        
-        self.failedAxes = [False,False,False,False,False]
 
         if not passed:
             self.errors = colored("Board failed\n", 'red') + self.errors
@@ -131,4 +129,4 @@ class TestProcessor():
         self.mosfetLow = []
         self.thermistors = []
         self.errors = ""
-
+        self.failedAxes = [False,False,False,False,False]
