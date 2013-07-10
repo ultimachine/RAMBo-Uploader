@@ -27,7 +27,7 @@ class TestInterface():
         self.serial.setDTR(1)
         
         self.watchPuppy.startWatching(timeout = 2)
-        while not self.serial.inWaiting():
+        while self.serial.inWaiting() == 0:
             time.sleep(0.1)
             if self.watchPuppy.timedOut(): 
                 print "Could not initialize serial communication!"
@@ -67,7 +67,7 @@ class TestInterface():
                      
     def analogRead(self, pin): #Use Arduino analog pin numbering
         """Returns list with pin state"""
-        self.read() # Clear output        
+        self.read() # 8Clear output        
         self.serial.write("A"+str(pin)+"_")
         self.waitForFinish()
         if self.waitForFinish():
@@ -136,7 +136,10 @@ class TestInterface():
         return True
     
     def waitForStart(self):
+        self.output = ""
+        self.read()
         while "start" not in self.output:
+            time.sleep(0.1)
             self.output += self.read()       
         self.output = ""
         return True
