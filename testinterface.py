@@ -22,6 +22,8 @@ class TestInterface():
             return False
         self.serial.port = port
         self.serial.open()
+        self.serial.flushOutput()
+        self.serial.flushInput()
         self.serial.setDTR(0)
         time.sleep(1)
         self.serial.setDTR(1)
@@ -36,6 +38,7 @@ class TestInterface():
                + str(self.serial.baudrate) + " baud..."
         self.read() #Clear output
         self.output = ""
+	time.sleep(1)
         return True
 
     def close(self):
@@ -65,7 +68,6 @@ class TestInterface():
     def analogRead(self, pin): #Use Arduino analog pin numbering
         """Returns list with pin state"""
         self.serial.write("A"+str(pin)+"_")
-        self.waitForFinish()
         if self.waitForFinish():
             return self._findValues()  
         else: 
@@ -74,7 +76,6 @@ class TestInterface():
     def pullupReadPin(self, pin):
         """Returns list with pin state"""
         self.serial.write("Q"+str(pin)+"_")
-        self.waitForFinish()
         if self.waitForFinish():
             return self._findValues()   
         else: 
@@ -143,4 +144,5 @@ class TestInterface():
         else:
             vals = map(int,re.findall(r'\b\d+\b', self.output))  
         self.output = ""
+	self.read()
         return vals

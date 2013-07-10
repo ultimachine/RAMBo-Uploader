@@ -29,9 +29,9 @@ homingRate = 5000
 clampingRate = 4000
 clampingLength = 18550
 monitorFrequency = 1000
-stepperTestRPS = 4 #rotations per second for the stepper test
-controllerPort = "/dev/ttyACM2"
-targetPort = "/dev/ttyACM3"
+stepperTestRPS = 3 #rotations per second for the stepper test
+controllerPort = "/dev/ttyACM0"
+targetPort = "/dev/ttyACM1"
 testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
 vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 testing = True
@@ -134,7 +134,7 @@ while(testing):
     elif state == "powering":   
         print "Powering Board..."
         if controller.pinHigh(powerPin):
-            state = "thermistors"
+            state = "supply test"
         else:
             print "Powering failed."
             state = "board fail"
@@ -209,7 +209,7 @@ while(testing):
             print "Monitoring failed."
             state = "board fail"
         else:    
-            state = "program marlin"
+            state = "thermistors"
 
     elif state == "vrefs":
         print "Testing stepper driver references..."
@@ -265,7 +265,7 @@ while(testing):
             print "Reading thermistors failed."
             state = "board fail"
         else:
-            state = "supply test"
+            state = "program marlin"
 
     elif state == "program marlin":
         print "Disconnecting target from test server..."
