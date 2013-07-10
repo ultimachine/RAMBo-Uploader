@@ -41,7 +41,7 @@ supplyPins = [7, 2] #extruder rail, bed rail on controller
 mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
 mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller
 thermistorPins = [0, 1, 2]
-output = "" # hold output while we wait for start
+
 
 #def analogToVoltage(reading, voltage = 5, bits = 10):
 #   array = []
