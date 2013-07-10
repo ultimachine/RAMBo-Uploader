@@ -28,7 +28,6 @@ powerPin = 3 #bed on test controller
 homingRate = 5000
 clampingRate = 4000
 clampingLength = 18550
->>>>>>> modularity
 monitorFrequency = 1000
 stepperTestRPS = 3 #rotations per second for the stepper test
 controllerPort = "/dev/ttyACM0"
