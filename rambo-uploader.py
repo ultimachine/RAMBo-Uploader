@@ -6,6 +6,7 @@ import sys
 import wx, wx.html
 import ConfigParser
 from avrdude import *
+from atmega import *
 
 #
 # About Dialog
@@ -42,19 +43,6 @@ class AboutBox(wx.Dialog):
 		self.SetClientSize(hwin.GetSize())
 		self.CentreOnParent(wx.BOTH)
 		self.SetFocus()
-
-#
-# ATmega 
-#
-class atmega():
-	"atmega properties to pass to avrdude"
-	def __init__(self):
-		self.name = ""
-		self.lockBits = ""
-		self.extFuse = "" 
-		self.highFuse = ""
-		self.lowFuse = ""
-		self.bootloader = ""
 
 class window(wx.Frame):
 	def __init__(self):
