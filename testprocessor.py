@@ -77,42 +77,47 @@ class TestProcessor():
     def verifyAllTests(self):
         passed = True
         
-        print "Supply voltage values..."
-        print self.supplys    
-        passed &= self.testSupplys()    
+        if self.supplys: #Just realized this is spelled wrong
+            print "Supply voltage values..."
+            print self.supplys    
+            passed &= self.testSupplys()    
 
-        print "Vref values..."
-        print self.vrefs
-        passed &= self.testVrefs()
+        if self.vrefs:
+            print "Vref values..."
+            print self.vrefs
+            passed &= self.testVrefs()
 
-        print "Target thermistor readings..."
-        print self.thermistors
-        passed &= self.testThermistors()
+        if self.thermistors:
+            print "Target thermistor readings..."
+            print self.thermistors
+            passed &= self.testThermistors()
 
-        print "Mosfet high values..."
-        print self.mosfetHigh
-        passed &= self.testMosfetHigh()
+        if self.mosfetHigh:
+            print "Mosfet high values..."
+            print self.mosfetHigh
+            passed &= self.testMosfetHigh()
 
-        print "Mosfet low values..."
-        print self.mosfetLow
-        passed &= self.testMosfetLow()
+        if self.mosfetLow:
+            print "Mosfet low values..."
+            print self.mosfetLow
+            passed &= self.testMosfetLow()
 
-        print "Full step results"
-        passed &= self.testStepperResults(self.fullStep)
+        if self.fullStep:
+            print "Full step results"
+            passed &= self.testStepperResults(self.fullStep)
 
-        print "Half step results"
-        passed &= self.testStepperResults(self.halfStep)
+        if self.halfStep:
+            print "Half step results"
+            passed &= self.testStepperResults(self.halfStep)
 
-        print "Quarter step results"
-        passed &= self.testStepperResults(self.quarterStep)
+        if self.quarterStep:
+            print "Quarter step results"
+            passed &= self.testStepperResults(self.quarterStep)
 
-        print "Sixteeth step results"
-        passed &= self.testStepperResults(self.sixteenthStep)
+        if self.sixteenthStep:
+            print "Sixteeth step results"
+            passed &= self.testStepperResults(self.sixteenthStep)
 
-        if not passed:
-            self.errors = colored("Board failed\n", 'red') + self.errors
-        else:
-            self.errors = colored("Board passed\n", 'green') + self.errors
         return passed
         
     def showErrors(self):

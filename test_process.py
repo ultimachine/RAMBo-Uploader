@@ -279,7 +279,10 @@ while(testing):
             state = "board fail"
 
     elif state == "processing":
-        testProcessor.verifyAllTests()
+        if testProcessor.verifyAllTests():
+            print colored("Board passed!", 'green')
+        else:
+            print colored("Board failed!", 'red')
         state = "finished"
         testProcessor.showErrors()
         testProcessor.restart()
@@ -287,11 +290,14 @@ while(testing):
     elif state == "board fail":
         print "Unable to complete testing process!"
         print colored("Board failed",'red')
+        testProcessor.verifyAllTests()
+        testProcessor.showErrors()
+        testProcessor.restart()
         controller.pinLow(powerPin)
         print "Restarting test controller..."
         controller.restart()
-        print "Closing target..."
         if target.serial.isOpen():
+            print "Closing target..."
             target.close()
         state = "finished"
         
