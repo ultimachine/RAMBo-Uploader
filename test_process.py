@@ -30,10 +30,10 @@ clampingRate = 4000
 clampingLength = 18550
 monitorFrequency = 1000
 stepperTestRPS = 4 #rotations per second for the stepper test
-controllerPort = "/dev/ttyACM0"
-targetPort = "/dev/ttyACM1"
-testFirmwarePath = "/home/steve/UltiMachine/Test_Jig_Firmware/target_test_firmware.hex"
-vendorFirmwarePath = "/home/steve/UltiMachine/RAMBo-Uploader/Marlinth2.hex"
+controllerPort = "/dev/ttyACM2"
+targetPort = "/dev/ttyACM3"
+testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
+vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 testing = True
 state = "start"
 vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
@@ -296,6 +296,6 @@ while(testing):
     elif state == "finished":
         print "Preparing Test Jig for next board..."
         controller.pinLow(powerPin)
-        controller.home(homingRate, wait = False)
+        controller.home(homingRate)
         state = "start" 
 
