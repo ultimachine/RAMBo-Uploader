@@ -91,7 +91,7 @@ print "Monitoring test controller..."
 
 while(testing):
     if state == "start":
-        controller.waitForStart()
+        controller.waitForStart() #Blocks until button pressed
         state = "clamping"
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             
@@ -290,12 +290,13 @@ while(testing):
         print "Restarting test controller..."
         controller.restart()
         print "Closing target..."
-        target.close()
+        if target.serial.isOpen():
+            target.close()
         state = "finished"
         
     elif state == "finished":
         print "Preparing Test Jig for next board..."
         controller.pinLow(powerPin)
-        controller.home(homingRate, wait = False)
+        controller.home(homingRate, wait = True)
         state = "start" 
 

@@ -51,23 +51,19 @@ class TestInterface():
         return self.serial.read(self.serial.inWaiting())
         
     def pinHigh(self, pin):
-        self.read() # Clear output
         self.serial.write("W"+str(pin)+"H_")
         return self.waitForFinish(clear = True)
             
     def pinLow(self, pin):
-        self.read() # Clear output        
         self.serial.write("W"+str(pin)+"L_")
         return self.waitForFinish(clear = True)
                       
     def setMicroStepping(self, level):
-        self.read() # Clear output        
         self.serial.write("U"+str(level)+"_")
         return self.waitForFinish(clear = True)
                      
     def analogRead(self, pin): #Use Arduino analog pin numbering
         """Returns list with pin state"""
-        self.read() # 8Clear output        
         self.serial.write("A"+str(pin)+"_")
         self.waitForFinish()
         if self.waitForFinish():
@@ -77,7 +73,6 @@ class TestInterface():
     
     def pullupReadPin(self, pin):
         """Returns list with pin state"""
-        self.read() # Clear output        
         self.serial.write("Q"+str(pin)+"_")
         self.waitForFinish()
         if self.waitForFinish():
@@ -87,7 +82,6 @@ class TestInterface():
  
     def readPin(self, pin):
         """Returns list with pin state"""
-        self.read() # Clear output        
         self.serial.write("R"+str(pin)+"_")
         if self.waitForFinish():
             return self._findValues()
@@ -95,7 +89,6 @@ class TestInterface():
             return [-1]
         
     def home(self, rate, wait = True):
-        self.read() # Clear output
         self.serial.write("H"+str(rate)+"_")
         if wait:
             return self.waitForFinish(timeout = rate/1000, clear = True)
@@ -137,10 +130,9 @@ class TestInterface():
     
     def waitForStart(self):
         self.output = ""
-        self.read()
         while "start" not in self.output:
             time.sleep(0.1)
-            self.output += self.read()       
+            self.output += self.read()
         self.output = ""
         return True
         
