@@ -8,6 +8,7 @@ class TestProcessor():
         self.sixteenthStep = []
         self.vrefs = []
         self.supplys = []
+        self.supplyVoltages = []
         self.mosfetHigh = []
         self.mosfetLow = []
         self.thermistors = []
@@ -39,12 +40,12 @@ class TestProcessor():
             print colored("...Timed out at supply test", 'red')
             return False
         for i in [0,1]:
-            if self.supplys[i] in range(210,220,1):
+            if 11.5 <= self.supplyVoltages[i] <= 12.5:
                 pass
             else:
                 self.errors += colored("Test " + self.supplyNames[i] + " supply\n", 'red')
                 passed &= False
-        if self.supplys[2] in range(980,1024,1):
+        if 4.7 <= self.supplyVoltages[2] <= 5.2:
             pass
         else:
             self.errors += colored("Test " + self.supplyNames[2] + " supply\n", 'red')
@@ -108,8 +109,9 @@ class TestProcessor():
         
         if self.supplys: #Just realized this is spelled wrong
             print "Supply voltage values..."
-            print self.supplys    
-            passed &= self.testSupplys()    
+            self.supplyVoltages = self._analogToVoltage(readings = self.supplys)
+            print self.supplyVoltages
+            passed &= self.testSupplys()
 
         if self.vrefs:
             print "Vref values..."
@@ -159,6 +161,7 @@ class TestProcessor():
         self.sixteenthStep = []
         self.vrefs = []
         self.supplys = []
+        self.supplyVoltages = []
         self.mosfetHigh = []
         self.mosfetLow = []
         self.thermistors = []
@@ -171,3 +174,8 @@ class TestProcessor():
             return True
         else:
             return False
+            
+    def _analogToVoltage(readings = [], voltage = 5, bits = 10, dividerFactor = 0.091):
+        #divider factor is R2/(R1+R2)
+        for val in readings:
+            self.supplyVoltages += (float(val)/pow(2, bits)) * (voltage/dividerFactor)
