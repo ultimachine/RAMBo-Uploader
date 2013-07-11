@@ -16,7 +16,7 @@ class TestProcessor():
         self.failedMosfets = [False,False,False,False,False,False]
         self.axisNames = ["X","Y","Z","E0","E1"]
         self.thermistorNames = ["T0","T1","T2"]
-        self.supplyNames = ["Extruder Rail","Bed Rail"]
+        self.supplyNames = ["Extruder rail","Bed rail", "5V rail"]
         self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]  
         
     def testVrefs(self):
@@ -38,10 +38,17 @@ class TestProcessor():
         if self._wasTimedOut(self.supplys):
             print colored("...Timed out at supply test", 'red')
             return False
-        for idx, val in enumerate(self.supplys):
-            if not 210 <= val <= 220:
-                self.errors += colored("Test " + self.supplyNames[idx] + " supply\n", 'red')
+        for i in [0,1]:
+            if self.supplys[i] in range(210,220,1):
+                pass
+            else:
+                self.errors += colored("Test " + self.supplyNames[i] + " supply\n", 'red')
                 passed &= False
+        if self.supplys[2] in range(980,1024,1):
+            pass
+        else:
+            self.errors += colored("Test " + self.supplyNames[2] + " supply\n", 'red')
+            passed &= False
         return passed
 
     def testThermistors(self):
@@ -51,7 +58,7 @@ class TestProcessor():
             return False
         for idx, val in enumerate(self.thermistors):
             if not 975 <= val <= 985:
-                self.errors += colored("Check Thermistor" + self.thermistorNames[idx] + "\n", 'red')
+                self.errors += colored("Check Thermistor " + self.thermistorNames[idx] + "\n", 'red')
                 passed = False
         return passed
 
@@ -62,7 +69,7 @@ class TestProcessor():
             return False
         for idx, val in enumerate(self.mosfetLow):
             if not val == 1 and not self.failedMosfets[idx]:
-                self.errors += colored("Check MOSFET " + self.mosfetNames[idx] + "\n", 'red')
+                self.errors += colored("Check " + self.mosfetNames[idx] + " MOSFET\n", 'red')
                 self.failedMosfets[idx] = True
                 passed = False
         return passed
@@ -157,6 +164,7 @@ class TestProcessor():
         self.thermistors = []
         self.errors = ""
         self.failedAxes = [False,False,False,False,False]
+        self.failedMosfets = [False,False,False,False,False,False]
 
     def _wasTimedOut(self, vals):
         if -1 in vals:

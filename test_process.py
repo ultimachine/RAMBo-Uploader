@@ -37,11 +37,10 @@ vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 testing = True
 state = "start"
 vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
-supplyPins = [7, 2] #extruder rail, bed rail on controller
+supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
 mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
-mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller
+mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
 thermistorPins = [0, 1, 2]
-
 
 #def analogToVoltage(reading, voltage = 5, bits = 10):
 #   array = []

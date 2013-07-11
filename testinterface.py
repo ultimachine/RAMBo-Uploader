@@ -34,11 +34,11 @@ class TestInterface():
             if self.watchPuppy.timedOut(): 
                 print "Could not initialize serial communication!"
                 return False
+        time.sleep(1)
         print "Successfully connected to " + self.serial.port + " at " \
                + str(self.serial.baudrate) + " baud..."
         self.read() #Clear output
         self.output = ""
-	time.sleep(1)
         return True
 
     def close(self):
