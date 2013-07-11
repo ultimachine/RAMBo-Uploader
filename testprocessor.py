@@ -21,8 +21,8 @@ class TestProcessor():
         
     def testVrefs(self):
         passed = True
-        if self._wasTimedOut(self.vrefs)
-            print "Timed out at vref test"
+        if self._wasTimedOut(self.vrefs):
+            print colored("...Timed out at vref test", 'red')
             return False
         for idx, val in enumerate(self.vrefs):
             if not 170 <= val <= 195:
@@ -35,8 +35,8 @@ class TestProcessor():
 
     def testSupplys(self):
         passed = True
-        if self._wasTimedOut(self.supplys)
-            print "Timed out at supply test"
+        if self._wasTimedOut(self.supplys):
+            print colored("...Timed out at supply test", 'red')
             return False
         for idx, val in enumerate(self.supplys):
             if not 210 <= val <= 220:
@@ -46,8 +46,8 @@ class TestProcessor():
 
     def testThermistors(self):
         passed = True
-        if self._wasTimedOut(self.thermistors)
-            print "Timed out at thermistor test"
+        if self._wasTimedOut(self.thermistors):
+            print colored("...Timed out at thermistor test", 'red')
             return False
         for idx, val in enumerate(self.thermistors):
             if not 975 <= val <= 985:
@@ -57,8 +57,8 @@ class TestProcessor():
 
     def testMosfetLow(self):
         passed = True
-        if self._wasTimedOut(self.mosfetLow)
-            print "Timed out at MOSFET low test"
+        if self._wasTimedOut(self.mosfetLow):
+            print colored("...Timed out at MOSFET low test", 'red')
             return False
         for idx, val in enumerate(self.mosfetLow):
             if not val == 1 and not self.failedMosfets[idx]:
@@ -69,8 +69,8 @@ class TestProcessor():
 
     def testMosfetHigh(self):
         passed = True
-        if self._wasTimedOut(self.mosfetHigh)
-            print "Timed out at MOSFET high test"
+        if self._wasTimedOut(self.mosfetHigh):
+            print colored("...Timed out at MOSFET high test", 'red')
             return False
         for idx, val in enumerate(self.mosfetHigh):
             if not val == 0 and not self.failedMosfets[idx]:
@@ -81,8 +81,8 @@ class TestProcessor():
 
     def testStepperResults(self, vals):
         passed = True
-        if self._wasTimedOut(vals)
-            print "Timed out at stepper test"
+        if self._wasTimedOut(vals):
+            print colored("...Timed out at stepper test", 'red')
             return False
         for i in range(5):
             forward = vals[i]
