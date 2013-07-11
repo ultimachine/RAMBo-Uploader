@@ -259,7 +259,9 @@ while(testing):
     elif state == "thermistors":
         print "Testing thermistor values..."
         for pin in thermistorPins:
-            testProcessor.thermistors += target.analogRead(pin)
+             a = target.analogRead(pin)
+             print a
+             testProcessor.thermistors += a
         if -1 in testProcessor.thermistors:
             print "Reading thermistors failed."
             state = "board fail"
