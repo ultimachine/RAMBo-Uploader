@@ -12,11 +12,13 @@ class TestProcessor():
         self.mosfetLow = []
         self.thermistors = []
         self.errors = ""
+        self.failedAxes = [False,False,False,False,False]
+        self.failedMosfets = [False,False,False,False,False,False]
         self.axisNames = ["X","Y","Z","E0","E1"]
         self.thermistorNames = ["T0","T1","T2"]
         self.supplyNames = ["Extruder Rail","Bed Rail"]
-        self.failedAxes = [False,False,False,False,False]
-
+        self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]  
+        
     def testVrefs(self):
         passed = True
         if self._wasTimedOut(self.vrefs)
@@ -59,8 +61,9 @@ class TestProcessor():
             print "Timed out at MOSFET low test"
             return False
         for idx, val in enumerate(self.mosfetLow):
-            if not val == 1:
-                self.errors += colored("Check MOSFET " + str(idx) + "\n", 'red')
+            if not val == 1 and not self.failedMosfets[idx]:
+                self.errors += colored("Check MOSFET " + self.mosfetNames[idx] + "\n", 'red')
+                self.failedMosfets[idx] = True
                 passed = False
         return passed
 
@@ -70,8 +73,9 @@ class TestProcessor():
             print "Timed out at MOSFET high test"
             return False
         for idx, val in enumerate(self.mosfetHigh):
-            if not val == 0:
-                self.errors += colored("Check MOSFET " + str(idx) + "\n", 'red')
+            if not val == 0 and not self.failedMosfets[idx]:
+                self.errors += colored("Check MOSFET " + self.mosfetNames[idx] + "\n", 'red')
+                self.failedMosfets[idx] = True
                 passed = False
         return passed
 
