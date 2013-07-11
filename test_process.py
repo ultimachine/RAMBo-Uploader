@@ -150,7 +150,8 @@ while(testing):
                            direction = target.DOWN, triggerPin = triggerPin, wait = False)
         testProcessor.fullStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
-        if -1 in testProcessor.fullStep:
+        finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
+        if -1 in testProcessor.fullStep or not finished:
             print "Monitoring failed."
             state = "board fail"
         else:    
@@ -168,7 +169,8 @@ while(testing):
                            direction = target.DOWN, triggerPin = triggerPin, wait = False)
         testProcessor.halfStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
-        if -1 in testProcessor.halfStep:
+        finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
+        if  -1 in testProcessor.halfStep or not finished:
             print "Monitoring failed."
             state = "board fail"
         else:    
@@ -186,7 +188,8 @@ while(testing):
                            direction = target.DOWN, triggerPin = triggerPin, wait = False)
         testProcessor.quarterStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
-        if -1 in testProcessor.quarterStep:
+        finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
+        if -1 in testProcessor.quarterStep or not finished:
             print "Monitoring failed."
             state = "board fail"
         else:    
@@ -204,7 +207,8 @@ while(testing):
                            direction = target.DOWN, triggerPin = triggerPin, wait = False)
         testProcessor.sixteenthStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
-        if -1 in testProcessor.sixteenthStep:
+        finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
+        if -1 in testProcessor.sixteenthStep or not finished:
             print "Monitoring failed."
             state = "board fail"
         else:    
@@ -259,9 +263,7 @@ while(testing):
     elif state == "thermistors":
         print "Testing thermistor values..."
         for pin in thermistorPins:
-             a = target.analogRead(pin)
-             print a
-             testProcessor.thermistors += a
+            testProcessor.thermistors += target.analogRead(pin)
         if -1 in testProcessor.thermistors:
             print "Reading thermistors failed."
             state = "board fail"
