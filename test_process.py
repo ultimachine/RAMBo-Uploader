@@ -42,10 +42,6 @@ mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
 mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
 thermistorPins = [0, 1, 2]
 
-#def analogToVoltage(reading, voltage = 5, bits = 10):
-#   array = []
-#   for reading /pow(2,10))*voltage
-
 #Setup test interfaces
 controller = TestInterface()
 target = TestInterface()
