@@ -92,17 +92,20 @@ class TestProcessor():
         if self._wasTimedOut(vals):
             print colored("...Timed out at stepper test", 'red')
             return False
-        for i in range(5):
-            forward = vals[i]
-            reverse = vals[i+5]
+        for i in range(5): #Iterate over each stepper
+            forward = vals[i] #Forward value are the first 5 in the list
+            reverse = vals[i+5] #Reverse are the last 5
             print "Forward -> " + str(forward) + "Reverse -> " + str(reverse)
-            for j in range(5):
-	       validRange = range(reverse[4-j]-10,reverse[4-j]+10)
-               if not forward[j] in validRange and not self.failedAxes[i]: 
+            for j in range(5): #Iterates over each entry in the test list
+                #Here we fold the recording values onto each other and make sure
+                #each residency time in a flag section is within +- 10 for
+                #the forward and reverse segments
+                validRange = range(reverse[4-j]-10,reverse[4-j]+10)
+                if forward[j] not in validRange and not self.failedAxes[i]:
                     self.errors += colored("Check "+self.axisNames[i]+" stepper\n", 'red')
                     self.failedAxes[i] = True
                     passed = False
-        return passed 
+        return passed
         
     def verifyAllTests(self):
         passed = True
