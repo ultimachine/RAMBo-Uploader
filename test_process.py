@@ -40,6 +40,8 @@ vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
 supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
 mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
 mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+endstopInPins = [83, 82, 81, 80, 79, 78]
+endstopOutPin = [12, 11, 10, 24, 23, 30]
 thermistorPins = [0, 1, 2, 7]
 
 #Setup test interfaces
@@ -254,6 +256,32 @@ while(testing):
             print "Reading mosfets failed."
             state = "board fail"      
         else:     
+            state = "endstop high"
+
+    elif state == "endstop high":
+        passed = True
+        print "Testing endstops high..."
+        for pin in endstopOutPins:
+            passed &= controller.pinHigh(pin)
+        for pin in endstopInPins:
+            testProcessor.endstopHigh += target.readPin(pin)
+        if -1 in testProcessor.endstopHigh or not passed:
+            print "Reading endstops failed."
+            state = "board fail"      
+        else:     
+            state = "endstop low"
+
+    elif state == "endstop low":
+        passed = True
+        print "Testing endstops low..."
+        for pin in endstopOutPins:
+            passed &= controller.pinLow(pin)
+        for pin in endstopInPins:
+            testProcessor.endstopLow += target.readPin(pin)
+        if -1 in testProcessor.endstopLow or not passed:
+            print "Reading endstops failed."
+            state = "board fail"
+        else:
             state = "vrefs"
 
     elif state == "thermistors":

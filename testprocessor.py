@@ -12,14 +12,18 @@ class TestProcessor():
         self.supplyVoltages = []
         self.mosfetHigh = []
         self.mosfetLow = []
+        self.endstopHigh = []
+        self.endstopLow = []
         self.thermistors = []
         self.errors = ""
         self.failedAxes = [False,False,False,False,False]
         self.failedMosfets = [False,False,False,False,False,False]
+        self.failedEndstops = [False,False,False,False,False,False]
         self.axisNames = ["X","Y","Z","E0","E1"]
         self.thermistorNames = ["T0", "T1", "T2", "T3"]
         self.supplyNames = ["Extruder rail","Bed rail", "5V rail"]
         self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]  
+        self.endstopNames = ["X min", "Y min", "Z min", "X max", "Y max", "Z max"]
         
     def testVrefs(self):
         passed = True
@@ -83,8 +87,32 @@ class TestProcessor():
             return False
         for idx, val in enumerate(self.mosfetHigh):
             if not val == 0 and not self.failedMosfets[idx]:
-                self.errors += colored("Check MOSFET " + self.mosfetNames[idx] + "\n", 'red')
+                self.errors += colored("Check " + self.mosfetNames[idx] + " MOSFET\n", 'red')
                 self.failedMosfets[idx] = True
+                passed = False
+        return passed
+
+    def testEndstopHigh(self):
+        passed = True
+        if self._wasTimedOut(self.endstopHigh):
+            print colored("...Timed out at endstop high test", 'red')
+            return False
+        for idx, val in enumerate(self.endstopHigh):
+            if not val == 1 and not self.failedEndstops[idx]:
+                self.errors += colored("Check " + self.endstopNames[idx] + " endstop\n", 'red')
+                self.failedEndstops[idx] = True
+                passed = False
+        return passed
+
+    def testEndstopLow(self):
+        passed = True
+        if self._wasTimedOut(self.endstopLow):
+            print colored("...Timed out at endstop low test", 'red')
+            return False
+        for idx, val in enumerate(self.endstopLow):
+            if not val == 0 and not self.failedEndstops[idx]:
+                self.errors += colored("Check " + self.endstopNames[idx] + " endstop\n", 'red')
+                self.failedEndstops[idx] = True
                 passed = False
         return passed
 
@@ -137,6 +165,16 @@ class TestProcessor():
             print self.mosfetLow
             passed &= self.testMosfetLow()
 
+        if self.endstopHigh:
+            print "Endstop high values..."
+            print self.endstopHigh
+            passed &= self.testEndstopHigh()
+
+        if self.mosfetLow:
+            print "Endstop low values..."
+            print self.endstopLow
+            passed &= self.testEndstopLow()
+
         if self.fullStep:
             print "Full step results"
             passed &= self.testStepperResults(self.fullStep)
@@ -168,10 +206,13 @@ class TestProcessor():
         self.supplyVoltages = []
         self.mosfetHigh = []
         self.mosfetLow = []
+        self.endstopHigh = []
+        self.endstopLow = []
         self.thermistors = []
         self.errors = ""
         self.failedAxes = [False,False,False,False,False]
         self.failedMosfets = [False,False,False,False,False,False]
+        self.failedEndstops = [False,False,False,False,False,False]
 
     def _wasTimedOut(self, vals):
         if -1 in vals:
