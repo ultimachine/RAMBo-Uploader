@@ -1,3 +1,4 @@
+from __future__ import division
 from termcolor import colored
 
 class TestProcessor():
@@ -112,7 +113,7 @@ class TestProcessor():
         
         if self.supplys: #Just realized this is spelled wrong
             print "Supply voltage values..."
-            self.supplyVoltages = self._analogToVoltage(readings = self.supplys)
+            self._analogToVoltage(readings = self.supplys)
             print self.supplyVoltages
             passed &= self.testSupplys()
 
@@ -178,7 +179,7 @@ class TestProcessor():
         else:
             return False
             
-    def _analogToVoltage(readings = [], voltage = 5, bits = 10, dividerFactor = 0.091):
+    def _analogToVoltage(self, readings = [], voltage = 5, bits = 10, dividerFactor = 0.091):
         #divider factor is R2/(R1+R2)
         for val in readings:
-            self.supplyVoltages += (float(val)/pow(2, bits)) * (voltage/dividerFactor)
+            self.supplyVoltages += [(val/pow(2, bits))*(voltage/dividerFactor)]
