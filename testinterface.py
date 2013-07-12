@@ -144,5 +144,5 @@ class TestInterface():
         else:
             vals = map(int,re.findall(r'\b\d+\b', self.output))  
         self.output = ""
-	self.read()
+        self.read()
         return vals
