@@ -40,7 +40,7 @@ vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
 supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
 mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
 mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
-thermistorPins = [0, 1, 2]
+thermistorPins = [0, 1, 2, 7]
 
 #Setup test interfaces
 controller = TestInterface()
