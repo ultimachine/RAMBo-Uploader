@@ -20,7 +20,7 @@ class TestProcessor():
         self.failedMosfets = [False,False,False,False,False,False]
         self.failedEndstops = [False,False,False,False,False,False]
         self.axisNames = ["X","Y","Z","E0","E1"]
-        self.thermistorNames = ["T0", "T1", "T2", "T3"]
+        self.thermistorNames = ["T0","T1","T2"]
         self.supplyNames = ["Extruder rail","Bed rail", "5V rail"]
         self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]  
         self.endstopNames = ["X min", "Y min", "Z min", "X max", "Y max", "Z max"]
