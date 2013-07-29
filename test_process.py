@@ -18,10 +18,27 @@ from testprocessor import *
 from avrdude import *
 from atmega import *
 from testinterface import *
+import psycopg2
 
 print "RAMBo Test Server"
+directory = os.path.split(os.path.realpath(__file__))[0]
+version = subprocess.check_output(['git', '--git-dir='+directory+'/.git',
+                                   'rev-parse', 'HEAD'])
+version = version.strip()
+print "Git version - " + str(version)
 
-#Configuration        
+print "Connecting to database..."
+# Open our file outside of git repo which has database location, password, etc
+dbfile = open(directory+'/postgres_info.txt', 'r')
+postgresInfo = dbfile.read()
+dbfile.close()
+try:
+    testStorage = psycopg2.connect(postgresInfo)
+except:
+    print "Could not connect!"
+    sys.exit(0)
+
+#Configuration
 monitorPin = 44 #PL5 on test controller
 triggerPin = 3 #bed on target board
 powerPin = 3 #bed on test controller
@@ -36,6 +53,7 @@ testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_fi
 vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 testing = True
 state = "start"
+serialNumber = ""
 vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
 supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
 mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
@@ -88,10 +106,13 @@ print "Monitoring test controller..."
 
 while(testing):
     if state == "start":
+        print "Enter serial number : "
+        serialNumber = raw_input()
+        print "Press button to begin test"
         controller.waitForStart() #Blocks until button pressed
         state = "clamping"
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            
+
     elif state == "clamping":
         print "Clamping test jig..."
         controller.home(rate = homingRate, wait = False)
@@ -311,14 +332,13 @@ while(testing):
             print colored("Board failed!", 'red')
         state = "finished"
         testProcessor.showErrors()
-        testProcessor.restart()
+
         
     elif state == "board fail":
         print "Unable to complete testing process!"
         print colored("Board failed",'red')
         testProcessor.verifyAllTests()
         testProcessor.showErrors()
-        testProcessor.restart()
         controller.pinLow(powerPin)
         print "Restarting test controller..."
         controller.restart()
@@ -328,6 +348,11 @@ while(testing):
         state = "finished"
         
     elif state == "finished":
+        print "Writing results to database..."
+        testStorage = psycopg2.connect(postgresInfo)
+        cursor = testStorage.cursor()
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails) VALUES (%s, %s, %s, %s, %s)""", serialNumber, 'now', testProcessor.showErrors(), version, "place holder")
+        testProcessor.restart()
         print "Preparing Test Jig for next board..."
         controller.pinLow(powerPin)
         controller.home(homingRate, wait = True)
