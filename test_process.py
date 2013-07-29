@@ -351,7 +351,8 @@ while(testing):
         print "Writing results to database..."
         testStorage = psycopg2.connect(postgresInfo)
         cursor = testStorage.cursor()
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails) VALUES (%s, %s, %s, %s, %s)""", serialNumber, 'now', testProcessor.showErrors(), version, "place holder")
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails) VALUES (%s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.showErrors(), version, "place holder"))
+        testStorage.commit()
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
         controller.pinLow(powerPin)
