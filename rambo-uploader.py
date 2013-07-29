@@ -88,10 +88,10 @@ class window(wx.Frame):
 		self.Show()
 		
 		#init settings
-		self.isp1 = avrdude()
-		self.isp2 = avrdude()
-		self.avr1 = atmega()
-		self.avr2 = atmega()
+		self.isp1 = Avrdude()
+		self.isp2 = Avrdude()
+		self.avr1 = Atmega()
+		self.avr2 = Atmega()
 
 	def OnSave(self,event):
 		self.dirname = ''
