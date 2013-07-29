@@ -8,3 +8,11 @@ $ avrdude -v -v -p m2560 -c avrispmkII -P usb: -e -Ulock:w:0x0F:m -Uefuse:w:0xFD
 -The last -U flag is the location of the hex file you want to upload. 
 
 000200149639 avrisp
+
+##Barcode addition
+Scan in barcode or type one in.
+Get serial number.
+Wait for button press.
+(new version ideally scan triggers test)
+run test
+write to database.
