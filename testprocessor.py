@@ -192,7 +192,7 @@ class TestProcessor():
             passed &= self.testStepperResults(self.sixteenthStep)
 
         return passed
-        
+
     def showErrors(self):
         print self.errors
 
@@ -213,6 +213,20 @@ class TestProcessor():
         self.failedAxes = [False,False,False,False,False]
         self.failedMosfets = [False,False,False,False,False,False]
         self.failedEndstops = [False,False,False,False,False,False]
+
+    def resultsDictionary(self):
+        return dict(fullStep=self.fullStep,
+                    halfStep=self.halfStep,
+                    quarterStep=self.quarterStep,
+                    sixteenthStep=self.sixteenthStep,
+                    vrefs=self.vrefs,
+                    supplys=self.supplys,
+                    supplyVoltages=self.supplyVoltages,
+                    mosfetHigh=self.mosfetHigh,
+                    mosfetLow=self.mosfetLow,
+                    endstopHigh=self.endstopHigh,
+                    endstopLowself.endstopLow,
+                    thermistors=self.thermistors)
 
     def _wasTimedOut(self, vals):
         if -1 in vals:
