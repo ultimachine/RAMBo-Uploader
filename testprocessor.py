@@ -225,7 +225,7 @@ class TestProcessor():
                     mosfetHigh=self.mosfetHigh,
                     mosfetLow=self.mosfetLow,
                     endstopHigh=self.endstopHigh,
-                    endstop=Lowself.endstopLow,
+                    endstopLow=self.endstopLow,
                     thermistors=self.thermistors)
 
     def _wasTimedOut(self, vals):
