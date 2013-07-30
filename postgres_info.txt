@@ -1,1 +1,1 @@
-dbname='yourdatastore' user='username' host='192.168.0.0' password='password'
+dbname='ultidatastore' user='teststation' host='192.168.80.11' password='edw20logasus'
