@@ -328,8 +328,10 @@ while(testing):
     elif state == "processing":
         if testProcessor.verifyAllTests():
             print colored("Board passed!", 'green')
+            testProcessor.errors = "Passed" + testProcessor.errors
         else:
             print colored("Board failed!", 'red')
+            testProcessor.errors = "Failed:" + testProcessor.errors
         state = "finished"
         testProcessor.showErrors()
 
@@ -340,6 +342,7 @@ while(testing):
         testProcessor.verifyAllTests()
         testProcessor.showErrors()
         controller.pinLow(powerPin)
+        testProcessor.errors = "Failed:" + testProcessor.errors
         print "Restarting test controller..."
         controller.restart()
         if target.serial.isOpen():
@@ -351,7 +354,7 @@ while(testing):
         print "Writing results to database..."
         testStorage = psycopg2.connect(postgresInfo)
         cursor = testStorage.cursor()
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails) VALUES (%s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.showErrors(), version, str(testProcessor.resultsDictionary())))
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails) VALUES (%s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary())))
         testStorage.commit()
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
