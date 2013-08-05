@@ -31,7 +31,7 @@ class TestProcessor():
             print "...Timed out at vref test"
             return False
         for idx, val in enumerate(self.vrefs):
-            if not 170 <= val <= 195:
+            if not 166 <= val <= 195:
                 self.errors += self.axisNames[idx] + " axis vref incorrect\n"
                 passed &= False
         if max(self.vrefs) - min(self.vrefs) >= 15:
