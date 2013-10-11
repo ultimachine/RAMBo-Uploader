@@ -194,7 +194,7 @@ class TestProcessor():
         return passed
 
     def showErrors(self):
-        print colored(self.errors, 'red')
+        print self.errors
 
     def restart(self):
         self.fullStep = []
