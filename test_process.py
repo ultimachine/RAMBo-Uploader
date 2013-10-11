@@ -332,18 +332,24 @@ while(testing):
 
     elif state == "processing":
         if testProcessor.verifyAllTests():
-            print colored("Board passed!", 'green')
+            print colored(serialNumber + " Board passed!", 'green')
             testProcessor.errors = "Passed" + testProcessor.errors
+            with open("tplog.txt", "a") as tpLog:
+                tpLog.write(serialNumber + ' Passed\n')
         else:
-            print colored("Board failed!", 'red')
+            print colored(serialNumber + " Board failed!", 'red')
             testProcessor.errors = "Failed:" + testProcessor.errors
+            with open("tplog.txt", "a") as tpLog:
+                tpLog.write(serialNumber + ' Failed\n')
         state = "finished"
         testProcessor.showErrors()
 
         
     elif state == "board fail":
         print "Unable to complete testing process!"
-        print colored("Board failed",'red')
+        print colored(serialNumber + " Board failed",'red')
+        with open("tplog.txt", "a") as tpLog:
+            tpLog.write(serialNumber + ' Failed\n')
         testProcessor.verifyAllTests()
         testProcessor.showErrors()
         controller.pinLow(powerPin)
