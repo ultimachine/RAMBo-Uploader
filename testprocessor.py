@@ -20,7 +20,7 @@ class TestProcessor():
         self.failedMosfets = [False,False,False,False,False,False]
         self.failedEndstops = [False,False,False,False,False,False]
         self.axisNames = ["X","Y","Z","E0","E1"]
-        self.thermistorNames = ["T0","T1","T2"]
+        self.thermistorNames = ["T0","T1","T2","T3"]
         self.supplyNames = ["Extruder rail","Bed rail", "5V rail"]
         self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]  
         self.endstopNames = ["X min", "Y min", "Z min", "X max", "Y max", "Z max"]
@@ -63,7 +63,7 @@ class TestProcessor():
             print "...Timed out at thermistor test"
             return False
         for idx, val in enumerate(self.thermistors):
-            if not 975 <= val <= 985:
+            if not 967 <= val <= 985:
                 self.errors += "Check Thermistor " + self.thermistorNames[idx] + "\n"
                 passed = False
         return passed
@@ -170,7 +170,7 @@ class TestProcessor():
             print self.endstopHigh
             passed &= self.testEndstopHigh()
 
-        if self.mosfetLow:
+        if self.endstopLow:
             print "Endstop low values..."
             print self.endstopLow
             passed &= self.testEndstopLow()
