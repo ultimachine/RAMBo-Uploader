@@ -45,9 +45,11 @@ powerPin = 3 #bed on test controller
 homingRate = 5000
 clampingRate = 4000
 clampingLength = 18550
+#clampingLength = 16000
 monitorFrequency = 1000
 stepperTestRPS = 3 #rotations per second for the stepper test
 controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64033353730351918201-if00"
+#controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64036363638351300142-if00"
 targetPort = "/dev/ttyACM1"
 testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
 vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
@@ -118,7 +120,8 @@ while(testing):
         controller.home(rate = homingRate, wait = False)
         controller.runSteppers(frequency = clampingRate, steps = clampingLength,
                                direction = controller.UP, wait = False)
-        state = "program for test"
+        state = "wait for homing"
+#        state = "program for test"
 
     elif state == "uploading":
         print "Uploading Bootloader and setting fuses..."
@@ -136,7 +139,8 @@ while(testing):
     elif state == "connecting target":
         print "Attempting connect..."   
         if target.open(port = targetPort):
-            state = "wait for homing"
+            state = "supply test"
+#            state = "wait for homing"
         else:
             print "Connect failed."
             state = "board fail"
@@ -152,7 +156,8 @@ while(testing):
     elif state == "powering":   
         print "Powering Board..."
         if controller.pinHigh(powerPin):
-            state = "supply test"
+            state = "program for test"
+#            state = "supply test"
         else:
             print "Powering failed."
             state = "board fail"
