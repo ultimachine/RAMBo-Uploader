@@ -110,6 +110,8 @@ while(testing):
     if state == "start":
         print "Enter serial number : "
         serialNumber = raw_input()
+        with open("tplog.txt", "a") as tpLog:
+            tpLog.write(serialNumber + '\n')
         print "Press button to begin test"
         controller.waitForStart() #Blocks until button pressed
         state = "clamping"
