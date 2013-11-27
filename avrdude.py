@@ -26,7 +26,7 @@ class Avrdude():
             cmd.append("-b" + self.baudrate)
         if self.configFile:
             cmd.append("-C" + self.configFile)
-        if self.autoEraseFlash:
+        if self.autoEraseFlash is False:
             cmd.append("-D")
         if target.bootloader:
             cmd.append("-Uflash:w:" + target.bootloader + ":i")
