@@ -80,7 +80,7 @@ def find_target_port():
     for port in ports:
         if "RAMBo" in port[1]:
             ignore = False
-            if configuration.controller_snr in port[2]:
+            if port[0] == configuration.controller_port or port[2].endswith("SNR=%s" % configuration.controller_snr):
                 ignore = True
             for snr in configuration.ignore_rambo_snr:
                 if port[2].endswith("SNR=%s" % snr):
@@ -95,6 +95,16 @@ def find_target_port():
         return None
     return rambos[0]
     
+def find_serial_number(from_port):
+    ports = list(serial.tools.list_ports.comports())
+    for port in ports:
+        if port[0] == from_port:
+            snr = port[2].find("SNR=")
+            if snr >= 0:
+                return port[2][snr+4:]
+            break
+    return None
+                
 controllerPort = configuration.controller_port
 targetPort = configuration.target_port
 print list(serial.tools.list_ports.comports())
