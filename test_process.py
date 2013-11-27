@@ -18,7 +18,6 @@ from testprocessor import *
 from avrdude import *
 from atmega import *
 from testinterface import *
-import psycopg2
 import serial.tools.list_ports
 import configuration
 
