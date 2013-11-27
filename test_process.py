@@ -19,6 +19,8 @@ from avrdude import *
 from atmega import *
 from testinterface import *
 import psycopg2
+import serial.tools.list_ports
+import configuration
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
@@ -46,25 +48,62 @@ except:
 monitorPin = 44 #PL5 on test controller
 triggerPin = 3 #bed on target board
 powerPin = 3 #bed on test controller
-homingRate = 5000
-clampingRate = 4000
-clampingLength = 18550
 monitorFrequency = 1000
 stepperTestRPS = 3 #rotations per second for the stepper test
-controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64033353730351918201-if00"
-targetPort = "/dev/ttyACM1"
-testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
-vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 testing = True
 state = "start"
 serialNumber = ""
-vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
+vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller [Analog-EXT-8, Analog-EXT-6, Analog-EXT-5, Analog-EXT-4, Analog-EXT-3]
 supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
-mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
-mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
-endstopOutPins = [83, 82, 81, 80, 79, 78]
-endstopInPins = [12, 11, 10, 24, 23, 30]
-thermistorPins = [0, 1, 2, 7]
+mosfetOutPins = [3, 2, 6, 7, 8, 9] #On target  [Bed, Fan2, Fan1, Heat1, Fan0, Heat0] 
+mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [MX1-5, MX1-4, MX2-5, MX2-4, MX3-5, MX3-4]
+endstopOutPins = [83, 82, 81, 80, 79, 78] # on controller [EXT2-10, EXT2-12, EXT2-14, EXT2-16, EXT2-18, EXT2-20 ]
+endstopInPins = [12, 11, 10, 24, 23, 30] # on target [xmin, ymin, zmin, xmax, ymax, zmax]
+thermistorPins = [0, 1, 2, 7]; # on target [T0, T1, T2, T3]
+
+def find_rambo_port(serial_number = None):
+    ports = list(serial.tools.list_ports.comports())
+    for port in ports:
+        if "RAMBo" in port[1]:
+            print "Found RAMBo board", port
+            if serial_number is None:
+                return port[0]
+            elif serial_number in port[2]:
+                print "Found port with correct serial : ", port
+                return port[0]
+        else:
+            print "Ignoring non-RAMBo board", port
+
+def find_target_port():
+    ports = list(serial.tools.list_ports.comports())
+    rambos = []
+    for port in ports:
+        if "RAMBo" in port[1]:
+            ignore = False
+            if configuration.controller_snr in port[2]:
+                ignore = True
+            for snr in configuration.ignore_rambo_snr:
+                if port[2].endswith("SNR=%s" % snr):
+                    print "Ignoring this board ", port
+                    ignore = True
+
+            if ignore is False:
+                rambos.append(port[0])
+                
+    print "Found these boards : ", rambos
+    if len(rambos) != 1:
+        return None
+    return rambos[0]
+    
+controllerPort = configuration.controller_port
+targetPort = configuration.target_port
+print list(serial.tools.list_ports.comports())
+
+if controllerPort is None:
+    controllerPort = find_rambo_port(configuration.controller_snr)
+if controllerPort is None:
+    print "Can't find controller board."
+    sys.exit(0)
 
 #Setup test interfaces
 controller = TestInterface()
@@ -76,17 +115,17 @@ if not controller.open(port = controllerPort):
 #Setup target test firmware object to pass to AVRDUDE.
 testFirmware = Atmega()
 testFirmware.name = "atmega2560"
-testFirmware.bootloader = testFirmwarePath
+testFirmware.bootloader = configuration.test_firmware_path
 
 #Setup target vendor firmware object to pass to AVRDUDE. 
 vendorFirmware = Atmega()
 vendorFirmware.name = "atmega2560"
-vendorFirmware.bootloader = vendorFirmwarePath
+vendorFirmware.bootloader = configuration.vendor_firmware_path
 
 #Setup up avrdude config for upload to an Arduino.
 avrdude = Avrdude()
-avrdude.path = "/usr/bin/avrdude"
-avrdude.programmer = "stk500v2"
+avrdude.path = configuration.avrdude_path
+avrdude.programmer = configuration.serial_programmer
 avrdude.port = targetPort
 avrdude.baudrate = "115200"
 avrdude.autoEraseFlash = True
@@ -99,7 +138,6 @@ testProcessor = TestProcessor()
 def signal_handler(signal, frame):
     print "Shutting down test server..."
     controller.pinLow(powerPin)
-    controller.home(homingRate, wait = False)
     controller.close()
     target.close()
     sys.exit(0)
@@ -110,53 +148,84 @@ print "Monitoring test controller..."
 
 while(testing):
     if state == "start":
-        print "Enter serial number : "
-        serialNumber = raw_input()
-        print "Press button to begin test"
-        controller.waitForStart() #Blocks until button pressed
-        state = "clamping"
+        controller.pinLow(powerPin)
+        print "Press Enter to start test "
+        raw_input()
+        if configuration.icsp_program:
+            state = "uploading"
+        else:
+            state = "program for test"
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-    elif state == "clamping":
-        print "Clamping test jig..."
-        controller.home(rate = homingRate, wait = False)
-        controller.runSteppers(frequency = clampingRate, steps = clampingLength,
-                               direction = controller.UP, wait = False)
-        state = "program for test"
 
     elif state == "uploading":
         print "Uploading Bootloader and setting fuses..."
-        avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
-        avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
+        m32u2_image = Atmega()
+        m32u2_image.name = "m32u2"
+        m32u2_image.bootloader = configuration.m32u2_bootloader_path
+        m32u2_image.lockBits = "0x0F"
+        m32u2_image.extFuse = "0xF4"
+        m32u2_image.highFuse = "0xD9"
+        m32u2_image.lowFuse = "0xEF"
 
-    elif state == "program for test":
-        print "Programming target with test firmware..."
-        if avrdude.upload(testFirmware, timeout = 10):
-            state = "connecting target"
+        m2560_image = Atmega()
+        m2560_image.name = "m2560"
+        m2560_image.bootloader = configuration.m2560_bootloader_path
+        m2560_image.lockBits = "0x0F"
+        m2560_image.extFuse = "0xFD"
+        m2560_image.highFuse = "0xD0"
+        m2560_image.lowFuse = "0xFF"
+
+        icsp = Avrdude()
+        icsp.path = configuration.avrdude_path
+        icsp.verbose = 2
+        icsp.verify = configuration.icsp_verify
+
+        icsp.programmer = configuration.m32u2_icsp_programmer
+        icsp.port = configuration.m32u2_icsp_port
+        if icsp.upload(m32u2_image, timeout=60):
+            icsp.programmer = configuration.m2560_icsp_programmer
+            icsp.port = configuration.m2560_icsp_port
+            if icsp.upload(m2560_image, timeout=120):
+                state = "program for test"
+                time.sleep(5)
+            else:
+                print "Upload failed."
+                state = "board fail"
         else:
             print "Upload failed."
             state = "board fail"
 
+    elif state == "program for test":
+        print "Programming target with test firmware..."
+        state = "connecting target"
+        targetPort = configuration.target_port
+        if targetPort is None:
+            targetPort = find_target_port()
+        if targetPort is None:
+            print "Can't find target board."
+            state = "board fail"
+        else:
+            avrdude.port = targetPort
+            if avrdude.upload(testFirmware, timeout = 10):
+                state = "connecting target"
+            else:
+                print "Upload failed."
+                state = "board fail"
+
     elif state == "connecting target":
         print "Attempting connect..."   
         if target.open(port = targetPort):
-            state = "wait for homing"
+            state = "powering"
         else:
             print "Connect failed."
             state = "board fail"
 
-    elif state == "wait for homing":
-        print "Waiting for homing to complete..."
-        if controller.waitForFinish(commands = 2, timeout = 10, clear = True):
-            state = "powering"
-        else:
-            print "Homing failed."
-            state = "board fail"
-            
     elif state == "powering":   
         print "Powering Board..."
         if controller.pinHigh(powerPin):
             state = "supply test"
+            time.sleep(configuration.powering_delay);
         else:
             print "Powering failed."
             state = "board fail"
@@ -325,6 +394,7 @@ while(testing):
         print "Programming target with vendor firmware..."
         if avrdude.upload(vendorFirmware, timeout = 20):
             state = "processing"
+            time.sleep(1)
         else:
             print "Upload failed!"
             state = "board fail"
@@ -363,6 +433,5 @@ while(testing):
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
         controller.pinLow(powerPin)
-        controller.home(homingRate, wait = True)
         state = "start" 
 
