@@ -22,8 +22,12 @@ import psycopg2
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
-version = subprocess.check_output(['git', '--git-dir='+directory+'/.git',
+try:
+    version = subprocess.check_output(['git', '--git-dir='+directory+'/.git',
                                    'rev-parse', 'HEAD'])
+except:
+    print "Could not get git version"
+    version = "unknown"
 version = version.strip()
 print "Git version - " + str(version)
 
