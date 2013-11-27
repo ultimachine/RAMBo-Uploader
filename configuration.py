@@ -37,3 +37,24 @@ powering_delay=1
 test_firmware_path="C:/RAMBo/bootloaders/test_firmware.hex"
 # Path to the final retail firmware
 vendor_firmware_path="C:/RAMBo/bootloaders/vendor_firmware.hex"
+
+# Database settings
+database_type="log"
+
+if database_type == "postgres":
+    from postgresdb import PostgresDatabase
+    import os
+
+    # Open our file outside of git repo which has database location, password, etc
+    dbfile = open( os.path.split(os.path.realpath(__file__))[0]+'/postgres_info.txt', 'r')
+    postgresInfo = dbfile.read()
+    dbfile.close()
+    database = PostgresDatabase(postgresInfo)
+elif database_type == "log":
+    from logdb import LogDatabase
+
+    database = LogDatabase("results.log")
+else:
+    from nodb import NoDatabase
+
+    database = NoDatabase()

@@ -34,12 +34,8 @@ version = version.strip()
 print "Git version - " + str(version)
 
 print "Connecting to database..."
-# Open our file outside of git repo which has database location, password, etc
-dbfile = open(directory+'/postgres_info.txt', 'r')
-postgresInfo = dbfile.read()
-dbfile.close()
 try:
-    testStorage = psycopg2.connect(postgresInfo)
+    testStorage = configuration.database.open()
 except:
     print "Could not connect!"
     sys.exit(0)
@@ -436,10 +432,7 @@ while(testing):
         
     elif state == "finished":
         print "Writing results to database..."
-        testStorage = psycopg2.connect(postgresInfo)
-        cursor = testStorage.cursor()
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails) VALUES (%s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary())))
-        testStorage.commit()
+        configuration.database.post(find_serial_number(targetPort), testProcessor.errors, version, str(testProcessor.resultsDictionary()))
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
         controller.pinLow(powerPin)
