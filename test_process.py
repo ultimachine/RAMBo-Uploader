@@ -44,12 +44,13 @@ triggerPin = 3 #bed on target board
 powerPin = 3 #bed on test controller
 homingRate = 5000
 clampingRate = 4000
+# clamping length for : 1.1=18550, 1.2=16000
 #clampingLength = 18550
 clampingLength = 16000
 monitorFrequency = 1000
 stepperTestRPS = 3 #rotations per second for the stepper test
 #controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64033353730351918201-if00"
-controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64036363638351300142-if00"
+controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64037323235351607090-if00"
 targetPort = "/dev/ttyACM1"
 testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
 vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
@@ -63,6 +64,7 @@ mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
 endstopOutPins = [83, 82, 81, 80, 79, 78]
 endstopInPins = [12, 11, 10, 24, 23, 30]
 thermistorPins = [0, 1, 2, 7]
+logFile = '/home/ultimachine/tplog.txt'
 
 #Setup test interfaces
 controller = TestInterface()
@@ -110,7 +112,7 @@ while(testing):
     if state == "start":
         print "Enter serial number : "
         serialNumber = raw_input()
-        with open("tplog.txt", "a") as tpLog:
+        with open(logFile, "a") as tpLog:
             tpLog.write(serialNumber + '\n')
         print "Press button to begin test"
         controller.waitForStart() #Blocks until button pressed
@@ -249,6 +251,8 @@ while(testing):
             state = "board fail"
         else:     
             state = "fullstep"
+#            state = "thermistors"
+#            state = "processing"
 
     elif state == "supply test":
         print "Testing supply voltages..."
@@ -336,12 +340,12 @@ while(testing):
         if testProcessor.verifyAllTests():
             print colored(serialNumber + " Board passed!", 'green')
             testProcessor.errors = "Passed" + testProcessor.errors
-            with open("tplog.txt", "a") as tpLog:
+            with open(logFile, "a") as tpLog:
                 tpLog.write(serialNumber + ' Passed\n')
         else:
             print colored(serialNumber + " Board failed!", 'red')
             testProcessor.errors = "Failed:" + testProcessor.errors
-            with open("tplog.txt", "a") as tpLog:
+            with open(logFile, "a") as tpLog:
                 tpLog.write(serialNumber + ' Failed\n')
         state = "finished"
         testProcessor.showErrors()
@@ -350,7 +354,7 @@ while(testing):
     elif state == "board fail":
         print "Unable to complete testing process!"
         print colored(serialNumber + " Board failed",'red')
-        with open("tplog.txt", "a") as tpLog:
+        with open(logFile, "a") as tpLog:
             tpLog.write(serialNumber + ' Failed\n')
         testProcessor.verifyAllTests()
         testProcessor.showErrors()
