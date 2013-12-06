@@ -31,10 +31,10 @@ class TestProcessor():
             print "...Timed out at vref test"
             return False
         for idx, val in enumerate(self.vrefs):
-            if not 166 <= val <= 195:
+            if not 166 <= val <= 215:
                 self.errors += self.axisNames[idx] + " axis vref incorrect\n"
                 passed &= False
-        if max(self.vrefs) - min(self.vrefs) >= 15:
+        if max(self.vrefs) - min(self.vrefs) >= 16:
             self.errors +=  "Vref variance too high!\n"
             passed &= False
         return passed
@@ -45,7 +45,7 @@ class TestProcessor():
             print "...Timed out at supply test"
             return False
         for i in [0,1]:
-            if 11.5 <= self.supplyVoltages[i] <= 12.5:
+            if 11.4 <= self.supplyVoltages[i] <= 12.5:
                 pass
             else:
                 self.errors += "Test " + self.supplyNames[i] + " supply\n"
@@ -63,7 +63,7 @@ class TestProcessor():
             print "...Timed out at thermistor test"
             return False
         for idx, val in enumerate(self.thermistors):
-            if not 967 <= val <= 985:
+            if not 956 <= val <= 985:
                 self.errors += "Check Thermistor " + self.thermistorNames[idx] + "\n"
                 passed = False
         return passed
