@@ -31,7 +31,7 @@ class TestProcessor():
             print "...Timed out at vref test"
             return False
         for idx, val in enumerate(self.vrefs):
-            if not 166 <= val <= 215:
+            if not 162 <= val <= 192:
                 self.errors += self.axisNames[idx] + " axis vref incorrect\n"
                 passed &= False
         if max(self.vrefs) - min(self.vrefs) >= 16:
@@ -234,7 +234,7 @@ class TestProcessor():
         else:
             return False
             
-    def _analogToVoltage(self, readings = [], voltage = 5, bits = 10, dividerFactor = 0.091):
+    def _analogToVoltage(self, readings = [], voltage = 5, bits = 10, dividerFactor = 0.088):
         #divider factor is R2/(R1+R2)
         for val in readings:
             self.supplyVoltages += [(val/pow(2, bits))*(voltage/dividerFactor)]
