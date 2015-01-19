@@ -19,6 +19,7 @@ from avrdude import *
 from atmega import *
 from testinterface import *
 import psycopg2
+from subprocess import call
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
@@ -42,13 +43,14 @@ except:
 monitorPin = 44 #PL5 on test controller
 triggerPin = 3 #bed on target board
 powerPin = 3 #bed on test controller
-homingRate = 5000
-clampingRate = 4000
+homingRate = 11000 #5000
+clampingRate = 10000 #4000
 # clamping length for : 1.1=18550, 1.2=16000
 #clampingLength = 18550
-clampingLength = 16300
+#clampingLength = 16300
+clampingLength = 16200
 monitorFrequency = 1000
-stepperTestRPS = 3 #rotations per second for the stepper test
+stepperTestRPS = 5 #3 #rotations per second for the stepper test
 #controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64033353730351918201-if00"
 controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64037323235351607090-if00"
 targetPort = "/dev/ttyACM1"
@@ -112,6 +114,8 @@ while(testing):
     if state == "start":
         print "Enter serial number : "
         serialNumber = raw_input()
+	#call(["cat", "~/tplog.txt | grep " + serialNumber])
+	call(["./tpgrep.sh",serialNumber])
         with open(logFile, "a") as tpLog:
             tpLog.write(serialNumber + '\n')
         print "Press button to begin test"
