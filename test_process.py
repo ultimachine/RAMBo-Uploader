@@ -40,30 +40,36 @@ except:
 
 #Configuration
 monitorPin = 44 #PL5 on test controller
-triggerPin = 3 #bed on target board
+triggerPin = 4 #bed on target board
 powerPin = 3 #bed on test controller
 homingRate = 5000
 clampingRate = 4000
 # clamping length for : 1.1=18550, 1.2=16000
 #clampingLength = 18550
-clampingLength = 16000
+clampingLength = 16300
 monitorFrequency = 1000
 stepperTestRPS = 3 #rotations per second for the stepper test
 #controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64033353730351918201-if00"
 controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64037323235351607090-if00"
 targetPort = "/dev/ttyACM1"
-testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
-vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
+testFirmwarePath = "/home/ultimachine/workspace/MiniRamboTestJigFirmware/target_test_firmware.hex"
+#testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
+vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Mini-Rambo-Marlin/Marlin.cpp.hex"
+#vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 testing = True
 state = "start"
 serialNumber = ""
-vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
+#vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
+vrefPins = [8, 5, 4,] #x, y, z, e0, e1 on controller
 supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
-mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
-mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+#mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
+#mosfetOutPins = [3, 6, 7, 8, 4, 2] #On target
+mosfetOutPins = [3, 6, 8, 4] #On target
+#mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+mosfetInPins = [44, 45, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
 endstopOutPins = [83, 82, 81, 80, 79, 78]
 endstopInPins = [12, 11, 10, 24, 23, 30]
-thermistorPins = [0, 1, 2, 7]
+thermistorPins = [0, 1, 2]
 logFile = '/home/ultimachine/tplog.txt'
 
 #Setup test interfaces
@@ -114,9 +120,10 @@ while(testing):
         serialNumber = raw_input()
         with open(logFile, "a") as tpLog:
             tpLog.write(serialNumber + '\n')
-        print "Press button to begin test"
-        controller.waitForStart() #Blocks until button pressed
-        state = "clamping"
+#        print "Press button to begin test"
+#        controller.waitForStart() #Blocks until button pressed
+#        state = "clamping"
+        state = "powering"
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     elif state == "clamping":
@@ -376,6 +383,6 @@ while(testing):
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
         controller.pinLow(powerPin)
-        controller.home(homingRate, wait = True)
+#        controller.home(homingRate, wait = True)
         state = "start" 
 

@@ -15,7 +15,7 @@ class Avrdude():
         self.configFile = ""
         self.autoEraseFlash = True
 
-    def upload(self, target, timeout = 15):
+    def upload(self, target, timeout = 30):
         #assemble argument array
         cmd = [self.path, "-c", self.programmer, "-P", self.port]
         if self.programmerSN:
@@ -28,6 +28,7 @@ class Avrdude():
             cmd.append("-C" + self.configFile)
         if self.autoEraseFlash:
             cmd.append("-D")
+            cmd.append("-V") #removes verification to speed up the process -Jason
         if target.bootloader:
             cmd.append("-Uflash:w:" + target.bootloader + ":i")
         if target.extFuse:

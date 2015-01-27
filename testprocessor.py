@@ -19,10 +19,12 @@ class TestProcessor():
         self.failedAxes = [False,False,False,False,False]
         self.failedMosfets = [False,False,False,False,False,False]
         self.failedEndstops = [False,False,False,False,False,False]
-        self.axisNames = ["X","Y","Z","E0","E1"]
-        self.thermistorNames = ["T0","T1","T2","T3"]
+        self.axisNames = ["X","Y","Z","E0"]
+        self.vrefNames = ["X,Y","Z","E0"]
+        self.thermistorNames = ["T0","T1","T2"]
         self.supplyNames = ["Extruder rail","Bed rail", "5V rail"]
-        self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]  
+#        self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]  
+        self.mosfetNames = ["Bed","Fan1","Fan0","Heat0"]
         self.endstopNames = ["X min", "Y min", "Z min", "X max", "Y max", "Z max"]
         
     def testVrefs(self):
@@ -31,8 +33,8 @@ class TestProcessor():
             print "...Timed out at vref test"
             return False
         for idx, val in enumerate(self.vrefs):
-            if not 166 <= val <= 215:
-                self.errors += self.axisNames[idx] + " axis vref incorrect\n"
+            if not 162 <= val <= 192:
+                self.errors += self.vrefNames[idx] + " axis vref incorrect\n"
                 passed &= False
         if max(self.vrefs) - min(self.vrefs) >= 16:
             self.errors +=  "Vref variance too high!\n"
@@ -63,7 +65,7 @@ class TestProcessor():
             print "...Timed out at thermistor test"
             return False
         for idx, val in enumerate(self.thermistors):
-            if not 956 <= val <= 985:
+            if not 925 <= val <= 955:
                 self.errors += "Check Thermistor " + self.thermistorNames[idx] + "\n"
                 passed = False
         return passed
@@ -121,7 +123,7 @@ class TestProcessor():
         if self._wasTimedOut(vals):
             print "...Timed out at stepper test"
             return False
-        for i in range(5): #Iterate over each stepper
+        for i in range(4): #Iterate over each stepper
             forward = vals[i] #Forward value are the first 5 in the list
             reverse = vals[i+5] #Reverse are the last 5
             print "Forward -> " + str(forward) + "Reverse -> " + str(reverse)
@@ -234,7 +236,7 @@ class TestProcessor():
         else:
             return False
             
-    def _analogToVoltage(self, readings = [], voltage = 5, bits = 10, dividerFactor = 0.091):
+    def _analogToVoltage(self, readings = [], voltage = 5, bits = 10, dividerFactor = 0.088):
         #divider factor is R2/(R1+R2)
         for val in readings:
             self.supplyVoltages += [(val/pow(2, bits))*(voltage/dividerFactor)]
