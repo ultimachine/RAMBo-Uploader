@@ -112,6 +112,8 @@ print "Monitoring test controller..."
 
 while(testing):
     if state == "start":
+	failCode = None
+	failNote = None
         print "Enter serial number : "
         serialNumber = raw_input()
 	#call(["cat", "~/tplog.txt | grep " + serialNumber])
@@ -346,14 +348,14 @@ while(testing):
             testProcessor.errors = "Passed" + testProcessor.errors
             with open(logFile, "a") as tpLog:
                 tpLog.write(serialNumber + ' Passed\n')
+            state = "finished"
         else:
             print colored(serialNumber + " Board failed!", 'red')
             testProcessor.errors = "Failed:" + testProcessor.errors
             with open(logFile, "a") as tpLog:
                 tpLog.write(serialNumber + ' Failed\n')
-        state = "finished"
+            state = "enter code"
         testProcessor.showErrors()
-
         
     elif state == "board fail":
         print "Unable to complete testing process!"
@@ -369,13 +371,23 @@ while(testing):
         if target.serial.isOpen():
             print "Closing target..."
             target.close()
-        state = "finished"
+        #state = "finished"
+	state = "enter code"
+
+    elif state == "enter code":
+	print "0 See Comments, 1 Valid Fail, 2 Board insertet incorrectly, 3 No Fuse, 4 Bootloader missing"
+        print "Enter code for fail: "
+        failCode = raw_input()
+	if failCode == "0":
+            print "Enter note for fail: "
+            failNote = raw_input()
+	state = "finished"
         
     elif state == "finished":
         print "Writing results to database..."
         testStorage = psycopg2.connect(postgresInfo)
         cursor = testStorage.cursor()
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails) VALUES (%s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary())))
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
         testStorage.commit()
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
