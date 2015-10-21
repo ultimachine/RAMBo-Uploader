@@ -43,8 +43,8 @@ except:
 monitorPin = 44 #PL5 on test controller
 triggerPin = 3 #bed on target board
 powerPin = 3 #bed on test controller
-homingRate = 11000 #5000
-clampingRate = 8000 #4000
+homingRate = 8000 #5000
+clampingRate = 7000 #4000
 # clamping length for : 1.1=18550, 1.2=16000
 #clampingLength = 18550
 #clampingLength = 16300
