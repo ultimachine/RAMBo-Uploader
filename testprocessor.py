@@ -236,7 +236,7 @@ class TestProcessor():
         else:
             return False
             
-    def _analogToVoltage(self, readings = [], voltage = 5, bits = 10, dividerFactor = 0.088):
+    def _analogToVoltage(self, readings = [], voltage = 5, bits = 10, dividerFactor = 0.091):  #0.088
         #divider factor is R2/(R1+R2)
         for val in readings:
             self.supplyVoltages += [(val/pow(2, bits))*(voltage/dividerFactor)]
