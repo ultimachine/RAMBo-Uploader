@@ -71,9 +71,9 @@ thermistorPins = [0, 1, 2, 7]
 logFile = '/home/ultimachine/tplog.txt'
 testjig = "rambo" #used to tell state machine if it needs to clamp or not
 
-waveOperator = ""
-qcPerson = ""
-testPerson = ""
+waveOperator = None
+qcPerson = None
+testPerson = None
 
 #set target COM port from first command line argument
 if len(sys.argv) >= 2:
