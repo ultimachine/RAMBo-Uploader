@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import division
 from serial import Serial, SerialException
 import time
 from termcolor import colored
@@ -20,6 +21,7 @@ from atmega import *
 from testinterface import *
 import psycopg2
 from subprocess import call
+
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
@@ -67,6 +69,67 @@ endstopOutPins = [83, 82, 81, 80, 79, 78]
 endstopInPins = [12, 11, 10, 24, 23, 30]
 thermistorPins = [0, 1, 2, 7]
 logFile = '/home/ultimachine/tplog.txt'
+testjig = "rambo" #used to tell state machine if it needs to clamp or not
+
+waveOperator = ""
+qcPerson = ""
+testPerson = ""
+
+#set target COM port from first command line argument
+if len(sys.argv) >= 2:
+    targetPort = "/dev/ttyACM" + sys.argv[1]
+    print "targetPort: " + targetPort
+
+def set_minirambo_configs():
+    global triggerPin
+    global testFirmwarePath
+    global vendorFirmwarePath
+    global vrefPins
+    global mosfetOutPins
+    global mosfetInPins
+    global thermistorPins
+    global testjig
+    global testProcessor
+    triggerPin = 4
+    testFirmwarePath = "/home/ultimachine/workspace/MiniRamboTestJigFirmware/target_test_firmware.hex"
+    vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Mini-Rambo-Marlin/Marlin.cpp.hex"
+    vrefPins = [8, 5, 4,] #x, y, z, e0, e1 on controller
+    mosfetOutPins = [3, 6, 8, 4] #On target
+    mosfetInPins = [44, 45, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+    thermistorPins = [0, 1, 2]
+    testjig = "minirambo"
+
+    testProcessor = miniRamboTestProcessor
+
+    #update variables to the Atmega class instances
+    testFirmware.bootloader = testFirmwarePath
+    vendorFirmware.bootloader = vendorFirmwarePath
+    print "Testjig is now : " + testjig
+
+def set_rambo_configs():
+    global triggerPin
+    global testFirmwarePath
+    global vendorFirmwarePath
+    global vrefPins
+    global mosfetOutPins
+    global mosfetInPins
+    global thermistorPins
+    global testjig
+    global testProcessor
+    triggerPin = 3 
+    testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
+    vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
+    vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
+    mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
+    mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+    thermistorPins = [0, 1, 2, 7]
+    testjig = "rambo"
+
+    testProcessor = ramboTestProcessor
+
+    testFirmware.bootloader = testFirmwarePath
+    vendorFirmware.bootloader = vendorFirmwarePath
+    print "Testjig is now : " + testjig
 
 #Setup test interfaces
 controller = TestInterface()
@@ -79,6 +142,11 @@ if not controller.open(port = controllerPort):
 testFirmware = Atmega()
 testFirmware.name = "atmega2560"
 testFirmware.bootloader = testFirmwarePath
+
+MRtestFirmware = Atmega()
+MRtestFirmware.name = "atmega2560"
+MRtestFirmware.bootloader = "/home/ultimachine/workspace/MiniRamboTestJigFirmware/target_test_firmware.hex"
+
 
 #Setup target vendor firmware object to pass to AVRDUDE. 
 vendorFirmware = Atmega()
@@ -94,8 +162,22 @@ avrdude.baudrate = "115200"
 avrdude.autoEraseFlash = True
 
 #Define our test processor
-testProcessor = TestProcessor()
+miniRamboTestProcessor = TestProcessor()
+miniRamboTestProcessor.axisNames = ["X","Y","Z","E0"] #no E1
+miniRamboTestProcessor.vrefNames = ["X,Y","Z","E0"]
+miniRamboTestProcessor.thermistorNames = ["T0","T1","T2"] #no T3
+miniRamboTestProcessor.mosfetNames = ["Bed","Fan1","Fan0","Heat0"]
+miniRamboTestProcessor.thermistorLow = 925
+miniRamboTestProcessor.thermistorHigh = 955
+ramboTestProcessor = TestProcessor()
+testProcessor = ramboTestProcessor
 
+#Check for command line parameter override of test jig
+if len(sys.argv) >= 3:
+    if sys.argv[2] == "rambo":
+        set_rambo_configs()
+    if sys.argv[2] == "minirambo":
+        set_minirambo_configs()
 
 #Setup shutdown handlers
 def signal_handler(signal, frame):
@@ -110,19 +192,142 @@ signal.signal(signal.SIGINT, signal_handler)
 print "Test server started. Press CTRL-C to exit."
 print "Monitoring test controller..."
 
+def analog2volt(readings=[], voltage = 5, bits = 10, dividerFactor = 0.088):
+        #divider factor is R2/(R1+R2)
+        #return (val/pow(2, bits))*(voltage/dividerFactor)
+	#return ((val/1024) * (5.0/0.088))
+        voltages = []
+        #divider factor is R2/(R1+R2)
+        for val in readings:
+            voltages += [(val/pow(2, bits))*(voltage/dividerFactor)]
+	return voltages
+
+def showSupplys():
+                 supplyVoltagesUnpowered = []
+
+		 time.sleep(0.1)
+                 for pin in supplyPins:
+                     supplyVoltagesUnpowered += analog2volt(controller.analogRead(pin))
+                 print supplyVoltagesUnpowered
+
+def clamp():
+                 controller.home(rate = homingRate, wait = False)
+                 controller.runSteppers(frequency = clampingRate, steps = clampingLength,direction = controller.UP, wait = False)
+                 if controller.waitForFinish(commands = 2, timeout = 30, clear = True):
+                     print "Wait worked!"
+                 else:
+                     print "Wait timed out!"
+def home():
+                 controller.home(homingRate, wait = True)
+def powerOn():
+                 controller.pinHigh(powerPin)
+def powerOff():
+                 controller.pinLow(powerPin)
+
 while(testing):
     if state == "start":
 	failCode = None
 	failNote = None
-        print "Enter serial number : "
-        serialNumber = raw_input()
+
+
+        while True:
+            print "Enter serial number : "
+            serialNumber = raw_input().strip()
+            if serialNumber == "m":
+                 set_minirambo_configs()
+                 continue
+            if serialNumber == "r":
+                 set_rambo_configs()
+                 continue
+            if serialNumber == "p":
+                 print "Powering!!!!!!!"
+                 controller.pinHigh(powerPin)
+                 continue
+            if serialNumber == "o":
+                 print "Removing Power!!!!!!!"
+                 controller.pinLow(powerPin)
+                 continue
+            if serialNumber == "c":
+                 print "Clamping!!!!!!!"
+                 controller.home(rate = homingRate, wait = False)
+                 controller.runSteppers(frequency = clampingRate, steps = clampingLength,direction = controller.UP, wait = False)
+                 continue
+            if serialNumber == "h":
+                 print "Homing!!!!!!!"
+                 controller.home(homingRate, wait = True)
+                 continue
+            if serialNumber == "s":
+                 print "Supply Test!!!!!!!"
+                 supplyVoltagesUnpowered = []
+                 for pin in supplyPins:
+                     supplyVoltagesUnpowered += analog2volt(controller.analogRead(pin))
+                 print supplyVoltagesUnpowered
+                 continue
+            if serialNumber == "qc":
+                 print "Enter Quality Control person initials: "
+                 qcPerson = raw_input().strip()
+                 continue
+            if serialNumber == "wave":
+                 print "Enter Wave Operator initials: "
+                 waveOperator = raw_input().strip()
+                 continue
+            if serialNumber == "tester":
+                 print "Enter Test Operator initials: "
+                 testPerson = raw_input().strip()
+                 continue
+            if serialNumber == "ps":
+                 print "Supply Test!!!!!!!"
+                 clamp()
+                 powerOn()
+                 showSupplys()
+                 showSupplys()
+                 powerOff()
+                 showSupplys()
+                 showSupplys()
+
+                 for secs in range(10):
+                     print "seconds: " + str(secs)
+                     time.sleep(1)
+                     showSupplys()
+                     showSupplys()
+                 home()
+                 continue
+
+            if serialNumber == "grr":
+                 print "Test analog2volt"
+                 print "Test: " + str(analog2volt(216))
+                 continue
+
+            if serialNumber == "fw":
+                 print "Uploading Test Firmware!!!!!!!"
+                 avrdude.upload(testFirmware, timeout = 10)
+                 continue
+
+            try: 
+                sNum = int(serialNumber)
+                if(  (sNum in range(10010000,10099000))  or  (sNum in range(55500000,55555555)) ): 
+                    break
+                else:
+                    print "Invalid Entry. (Use 55500000-55555555 for Testing)."
+                    call(["beep","-f 2250"])
+            except: 
+                print "Error!  That was not a valid entry. Try again... (Use 55500000-55555555 for Testing)"
+                call(["beep","-f 2250"])
+
+        print "Testjig is now: " + testjig
+        print "VendorFirmware:" + vendorFirmwarePath
+
 	#call(["cat", "~/tplog.txt | grep " + serialNumber])
 	call(["./tpgrep.sh",serialNumber])
         with open(logFile, "a") as tpLog:
-            tpLog.write(serialNumber + '\n')
-        print "Press button to begin test"
-        controller.waitForStart() #Blocks until button pressed
-        state = "clamping"
+            tpLog.write(serialNumber + '\n') 
+
+        if testjig == "rambo":
+            print "Press button to begin test"
+            controller.waitForStart() #Blocks until button pressed
+            state = "clamping"
+        if testjig == "minirambo":
+            state = "powering"
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     elif state == "clamping":
@@ -149,7 +354,7 @@ while(testing):
     elif state == "connecting target":
         print "Attempting connect..."   
         if target.open(port = targetPort):
-            state = "supply test"
+            state = "mosfet high"
 #            state = "wait for homing"
         else:
             print "Connect failed."
@@ -166,8 +371,7 @@ while(testing):
     elif state == "powering":   
         print "Powering Board..."
         if controller.pinHigh(powerPin):
-            state = "program for test"
-#            state = "supply test"
+            state = "supply test"
         else:
             print "Powering failed."
             state = "board fail"
@@ -268,7 +472,7 @@ while(testing):
             print "Reading supplies failed."
             state = "board fail"
         else:     
-            state = "mosfet high"
+            state = "program for test" 
  
     elif state == "mosfet high":
         passed = True
@@ -344,12 +548,14 @@ while(testing):
 
     elif state == "processing":
         if testProcessor.verifyAllTests():
+            call(["./tpgrep.sh",serialNumber])
             print colored(serialNumber + " Board passed!", 'green')
             testProcessor.errors = "Passed" + testProcessor.errors
             with open(logFile, "a") as tpLog:
                 tpLog.write(serialNumber + ' Passed\n')
             state = "finished"
         else:
+            call(["./tpgrep.sh",serialNumber])
             print colored(serialNumber + " Board failed!", 'red')
             testProcessor.errors = "Failed:" + testProcessor.errors
             with open(logFile, "a") as tpLog:
@@ -387,11 +593,13 @@ while(testing):
         print "Writing results to database..."
         testStorage = psycopg2.connect(postgresInfo)
         cursor = testStorage.cursor()
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
+        #cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson ))
         testStorage.commit()
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
         controller.pinLow(powerPin)
-        controller.home(homingRate, wait = True)
+        if testjig == "rambo":
+            controller.home(homingRate, wait = True)
         state = "start" 
 
