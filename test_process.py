@@ -50,7 +50,7 @@ clampingRate = 7000 #4000
 # clamping length for : 1.1=18550, 1.2=16000
 #clampingLength = 18550
 #clampingLength = 16300
-clampingLength = 16200
+clampingLength = 16000 #16200
 monitorFrequency = 1000
 stepperTestRPS = 5 #3 #rotations per second for the stepper test
 #controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64033353730351918201-if00"
@@ -211,6 +211,8 @@ def showSupplys():
                  print supplyVoltagesUnpowered
 
 def clamp():
+                 #controller.home(rate = 4000, wait = False)
+                 #controller.runSteppers(frequency = 4000, steps = 300,direction = controller.UP, wait = False)
                  controller.home(rate = homingRate, wait = False)
                  controller.runSteppers(frequency = clampingRate, steps = clampingLength,direction = controller.UP, wait = False)
                  if controller.waitForFinish(commands = 2, timeout = 30, clear = True):
@@ -218,7 +220,9 @@ def clamp():
                  else:
                      print "Wait timed out!"
 def home():
-                 controller.home(homingRate, wait = True)
+                 print "Homing!!!!!!!"
+                 controller.home(rate = homingRate, wait = True)
+                 controller.runSteppers(frequency = clampingRate, steps = 300,direction = controller.UP, wait = False)
 def powerOn():
                  controller.pinHigh(powerPin)
 def powerOff():
@@ -253,8 +257,7 @@ while(testing):
                  controller.runSteppers(frequency = clampingRate, steps = clampingLength,direction = controller.UP, wait = False)
                  continue
             if serialNumber == "h":
-                 print "Homing!!!!!!!"
-                 controller.home(homingRate, wait = True)
+                 home()
                  continue
             if serialNumber == "s":
                  print "Supply Test!!!!!!!"
