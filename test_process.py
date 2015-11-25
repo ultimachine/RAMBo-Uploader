@@ -94,7 +94,9 @@ vendorFirmware.bootloader = vendorFirmwarePath
 #Setup up avrdude config for upload to an Arduino.
 avrdude = Avrdude()
 avrdude.path = "/usr/bin/avrdude"
-avrdude.programmer = "stk500v2"
+#avrdude.path = "/home/ultimachine/fakedude.sh"
+#avrdude.programmer = "stk500v2"
+avrdude.programmer = "wiring"
 avrdude.port = targetPort
 avrdude.baudrate = "115200"
 avrdude.autoEraseFlash = True
@@ -142,8 +144,10 @@ while(testing):
 
     elif state == "uploading":
         print "Uploading Bootloader and setting fuses..."
-        avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
-        avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
+        #avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
+        #avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
+        avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-s', '-V', '-c', u'atmelice_isp', '-P', u'usb', u'-pm2560', u'-e', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
+	state = "program for test"
 
     elif state == "program for test":
         print "Programming target with test firmware..."
@@ -173,8 +177,9 @@ while(testing):
     elif state == "powering":   
         print "Powering Board..."
         if controller.pinHigh(powerPin):
-            state = "program for test"
-#            state = "supply test"
+	    state = "uploading"
+            #state = "program for test"
+            #state = "supply test"
         else:
             print "Powering failed."
             state = "board fail"
@@ -342,6 +347,12 @@ while(testing):
     elif state == "program marlin":
         print "Disconnecting target from test server..."
         target.close()
+#        print "debug power toggle"
+#        time.sleep(1)
+#        controller.pinLow(powerPin)
+#        time.sleep(1)
+#        controller.pinHigh(powerPin)
+#        time.sleep(4)
         print "Programming target with vendor firmware..."
         if avrdude.upload(vendorFirmware, timeout = 20):
             state = "processing"
