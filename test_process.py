@@ -308,7 +308,7 @@ while(testing):
 
             try: 
                 sNum = int(serialNumber)
-                if(  (sNum in range(10010000,10099000))  or  (sNum in range(55500000,55555555)) ): 
+                if(  (sNum in range(10000000,10099000))  or  (sNum in range(55500000,55555555)) ): 
                     break
                 else:
                     print "Invalid Entry. (Use 55500000-55555555 for Testing)."
