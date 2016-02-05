@@ -75,6 +75,8 @@ waveOperator = None
 qcPerson = None
 testPerson = None
 
+overCurrentChecking = True
+
 #set target COM port from first command line argument
 if len(sys.argv) >= 2:
     targetPort = "/dev/ttyACM" + sys.argv[1]
@@ -228,11 +230,38 @@ def powerOn():
 def powerOff():
                  controller.pinLow(powerPin)
 
+def isOverCurrent():
+                 print "Testing Idle Current Usage..."
+                 global firstCurrentReadingAmps
+                 for count in range(5):
+                      controller.analogRead(1)
+                 ampreadings=[]
+                 for count in range(20):
+                      ampreadings += controller.analogRead(1)
+                 meanAmps = sum(ampreadings)/len(ampreadings) * (5.0/1024.0)
+                 if(firstCurrentReadingAmps == None):
+                      firstCurrentReadingAmps = meanAmps
+                 print "current_reading: " + str(meanAmps) + " Amps"
+                 if not overCurrentChecking: 
+                     return False
+                 if (meanAmps < 0.02) and ((meanAmps - firstCurrentReadingAmps) < 0.009):
+                     return False
+ 
+                 controller.pinLow(powerPin)
+                 print colored("Board is OVER MAXIMUM idle current...",'red')
+                 print colored("Check for reverse capacitor or short circuit...",'yellow')
+                 return True
+
+def targetMotorsDisable():
+                 ramboMotorEnablePins = [29,28,27,26,25]
+                 for enablePin in ramboMotorEnablePins:
+                      target.pinHigh(enablePin)
+
 while(testing):
     if state == "start":
 	failCode = None
 	failNote = None
-
+        firstCurrentReadingAmps = None
 
         while True:
             print "Enter serial number : "
@@ -265,6 +294,61 @@ while(testing):
                  for pin in supplyPins:
                      supplyVoltagesUnpowered += analog2volt(controller.analogRead(pin))
                  print supplyVoltagesUnpowered
+                 continue
+            if serialNumber == "a":
+                 for count in range(5):
+                      controller.analogRead(1)
+                 ampreadings=[]
+                 for count in range(20):
+                      ampreadings += controller.analogRead(1)
+                 amps = sum(ampreadings)/len(ampreadings) * (5.0/1024.0)
+                 print "current_reading: " + str(amps) + " Amps"
+                 continue
+            if serialNumber == "j":
+                 powerOn()
+                 isOverCurrent()
+                 time.sleep(0.5)
+                 isOverCurrent()
+                 powerOff()
+                 continue
+            if serialNumber == "ocon":
+                 overCurrentChecking = True
+                 continue
+            if serialNumber == "ocoff":
+                 overCurrentChecking = False
+                 continue
+            if serialNumber == "open":
+                 target.open(port = targetPort)
+                 continue
+            if serialNumber == "close":
+                 target.close()
+                 continue
+            if serialNumber == "moton":
+                 ramboMotorEnablePins = [29,28,27,26,25]
+                 for enablePin in ramboMotorEnablePins:
+                      target.pinLow(enablePin)
+                 continue
+            if serialNumber == "motoff":
+                 ramboMotorEnablePins = [29,28,27,26,25]
+                 for enablePin in ramboMotorEnablePins:
+                      target.pinHigh(enablePin)
+                 continue
+            if serialNumber == "motoffamps":
+                 powerOn()
+                 target.open(port = targetPort)
+
+                 ramboMotorEnablePins = [29,28,27,26,25]
+                 for enablePin in ramboMotorEnablePins:
+                      target.pinLow(enablePin)
+                 time.sleep(1)
+                 ramboMotorEnablePins = [29,28,27,26,25]
+                 for enablePin in ramboMotorEnablePins:
+                      target.pinHigh(enablePin)
+                 time.sleep(0.5)
+                 isOverCurrent()
+                 time.sleep(3)
+                 isOverCurrent()
+                 powerOff()
                  continue
             if serialNumber == "qc":
                  print "Enter Quality Control person initials: "
@@ -374,7 +458,9 @@ while(testing):
     elif state == "powering":   
         print "Powering Board..."
         if controller.pinHigh(powerPin):
-            state = "supply test"
+            time.sleep(0.5)
+            if isOverCurrent(): state = "board fail"
+            else: state = "supply test"
         else:
             print "Powering failed."
             state = "board fail"
@@ -537,17 +623,26 @@ while(testing):
             print "Reading thermistors failed."
             state = "board fail"
         else:
-            state = "program marlin"
+            #state = "program marlin"
+            targetMotorsDisable()
+            time.sleep(1.5)
+            if isOverCurrent(): state = "board fail"
+            else: state = "program marlin"
 
     elif state == "program marlin":
         print "Disconnecting target from test server..."
         target.close()
         print "Programming target with vendor firmware..."
         if avrdude.upload(vendorFirmware, timeout = 20):
-            state = "processing"
+            state = "testamps"
+            #state = "processing"
         else:
             print "Upload failed!"
             state = "board fail"
+
+    elif state == "testamps":
+        if isOverCurrent(): state = "board fail"
+        state = "processing"
 
     elif state == "processing":
         if testProcessor.verifyAllTests():
@@ -558,6 +653,7 @@ while(testing):
                 tpLog.write(serialNumber + ' Passed\n')
             state = "finished"
         else:
+            controller.pinLow(powerPin)
             call(["./tpgrep.sh",serialNumber])
             print colored(serialNumber + " Board failed!", 'red')
             testProcessor.errors = "Failed:" + testProcessor.errors
@@ -567,6 +663,7 @@ while(testing):
         testProcessor.showErrors()
         
     elif state == "board fail":
+        controller.pinLow(powerPin)
         print "Unable to complete testing process!"
         print colored(serialNumber + " Board failed",'red')
         with open(logFile, "a") as tpLog:
