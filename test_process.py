@@ -71,11 +71,17 @@ thermistorPins = [0, 1, 2, 7]
 logFile = '/home/ultimachine/tplog.txt'
 testjig = "rambo" #used to tell state machine if it needs to clamp or not
 
+relayBedPin = 4
+relayLogicPin = 5
+relayMotorsPin = 2
+
 waveOperator = None
 qcPerson = None
 testPerson = None
 
 overCurrentChecking = True
+meanAmps = None
+currentReadings = []
 
 #set target COM port from first command line argument
 if len(sys.argv) >= 2:
@@ -184,7 +190,7 @@ if len(sys.argv) >= 3:
 #Setup shutdown handlers
 def signal_handler(signal, frame):
     print "Shutting down test server..."
-    controller.pinLow(powerPin)
+    powerOff()
     controller.home(homingRate, wait = False)
     controller.close()
     target.close()
@@ -227,30 +233,92 @@ def home():
                  controller.runSteppers(frequency = clampingRate, steps = 300,direction = controller.UP, wait = False)
 def powerOn():
                  controller.pinHigh(powerPin)
+                 controller.pinHigh(relayBedPin)
+                 controller.pinHigh(relayLogicPin)
+                 return controller.pinHigh(relayMotorsPin)
 def powerOff():
                  controller.pinLow(powerPin)
+                 controller.pinLow(relayBedPin)
+                 controller.pinLow(relayLogicPin)
+                 controller.pinLow(relayMotorsPin)
 
 def isOverCurrent():
                  print "Testing Idle Current Usage..."
-                 global firstCurrentReadingAmps
-                 for count in range(5):
-                      controller.analogRead(1)
-                 ampreadings=[]
-                 for count in range(20):
-                      ampreadings += controller.analogRead(1)
-                 meanAmps = sum(ampreadings)/len(ampreadings) * (5.0/1024.0)
-                 if(firstCurrentReadingAmps == None):
-                      firstCurrentReadingAmps = meanAmps
-                 print "current_reading: " + str(meanAmps) + " Amps"
+                 global meanAmps
+                 global testProcessor
+                 currentReadings.append(checkCurrent())
                  if not overCurrentChecking: 
                      return False
-                 if (meanAmps < 0.02) and ((meanAmps - firstCurrentReadingAmps) < 0.009):
+                 if (meanAmps < 0.03):
                      return False
- 
-                 controller.pinLow(powerPin)
+
+                 powerOff()
+                 testProcessor.errors += "Over max isolated bed amps.\n"
                  print colored("Board is OVER MAXIMUM idle current...",'red')
                  print colored("Check for reverse capacitor or short circuit...",'yellow')
                  return True
+
+
+def checkCurrent():
+                 global meanAmps
+                 adcReadings = []
+                 for count in range(5):
+                      controller.analogRead(1)
+                 for count in range(20):
+                      adcReadings += controller.analogRead(1)
+                 meanAmps = round(sum(adcReadings)/len(adcReadings) * (5.0/1024.0),4)
+                 print colored("current_reading: " + str(meanAmps) + " Amps",'blue')
+                 return meanAmps
+
+def isOverCurrentIsolatedBed():
+                 global currentReadings
+                 global meanAmps
+                 global testProcessor
+                 currentReadings = []
+                 controller.pinLow(relayLogicPin)
+                 controller.pinLow(relayMotorsPin)
+                 controller.pinHigh(relayBedPin)
+                 time.sleep(0.1)
+                 currentReadings.append(checkCurrent())
+                 if meanAmps > 0.0:
+                     if not overCurrentChecking: return False
+                     controller.pinLow(relayBedPin)
+                     testProcessor.errors += "Over max isolated bed amps.\n"
+                     print colored("Check for reversed capacitor (C66) or leaky circuit (heatbed VIN)!!!!!",'red')
+                     return True
+                 return False
+
+def isOverCurrentIsolatedMotors():
+                 global currentReadings
+                 global meanAmps
+                 global testProcessor
+                 controller.pinLow(relayLogicPin)
+                 controller.pinHigh(relayMotorsPin)
+                 time.sleep(0.1)
+                 currentReadings.append(checkCurrent())
+                 if meanAmps > 0.0:
+                     if not overCurrentChecking: return False
+                     controller.pinLow(relayMotorsPin)
+                     testProcessor.errors += "Over max isolated motor amps.\n"
+                     print colored("Check for reversed large capacitor capacitor (C76) or leaky circuit (motors VIN)!!!!!",'red')
+                     return True
+                 return False
+
+def isOverCurrentIsolatedLogic():
+                 global currentReadings
+                 global meanAmps
+                 global testProcessor
+                 controller.pinLow(relayMotorsPin)
+                 controller.pinHigh(relayLogicPin)
+                 time.sleep(0.1)
+                 currentReadings.append(checkCurrent())
+                 if meanAmps > 0.02:
+                     if not overCurrentChecking: return False
+                     controller.pinLow(relayLogicPin)
+                     testProcessor.errors += "Over max isolated logic amps.\n"
+                     print colored("Check for reversed middle capacitor capacitor (C65) or leaky circuit (logic VIN)!!!!!",'red')
+                     return True
+                 return False
 
 def targetMotorsDisable():
                  ramboMotorEnablePins = [29,28,27,26,25]
@@ -261,7 +329,7 @@ while(testing):
     if state == "start":
 	failCode = None
 	failNote = None
-        firstCurrentReadingAmps = None
+        currentReadings = []
 
         while True:
             print "Enter serial number : "
@@ -274,11 +342,11 @@ while(testing):
                  continue
             if serialNumber == "p":
                  print "Powering!!!!!!!"
-                 controller.pinHigh(powerPin)
+                 powerOn()
                  continue
             if serialNumber == "o":
                  print "Removing Power!!!!!!!"
-                 controller.pinLow(powerPin)
+                 powerOff()
                  continue
             if serialNumber == "c":
                  print "Clamping!!!!!!!"
@@ -303,6 +371,24 @@ while(testing):
                       ampreadings += controller.analogRead(1)
                  amps = sum(ampreadings)/len(ampreadings) * (5.0/1024.0)
                  print "current_reading: " + str(amps) + " Amps"
+                 continue
+            if serialNumber == "bedon":
+                 controller.pinHigh(relayBedPin)
+                 continue
+            if serialNumber == "bedoff":
+                 controller.pinLow(relayBedPin)
+                 continue
+            if serialNumber == "logon":
+                 controller.pinHigh(relayLogicPin)
+                 continue
+            if serialNumber == "logoff":
+                 controller.pinLow(relayLogicPin)
+                 continue
+            if serialNumber == "moton":
+                 controller.pinHigh(relayMotorsPin)
+                 continue
+            if serialNumber == "motoff":
+                 controller.pinLow(relayMotorsPin)
                  continue
             if serialNumber == "j":
                  powerOn()
@@ -457,7 +543,13 @@ while(testing):
             
     elif state == "powering":   
         print "Powering Board..."
-        if controller.pinHigh(powerPin):
+        if isOverCurrentIsolatedBed():
+            state = "board fail"
+        elif isOverCurrentIsolatedMotors():
+            state = "board fail"
+        elif isOverCurrentIsolatedLogic():
+            state = "board fail"
+        elif powerOn():
             time.sleep(0.5)
             if isOverCurrent(): state = "board fail"
             else: state = "supply test"
@@ -653,7 +745,7 @@ while(testing):
                 tpLog.write(serialNumber + ' Passed\n')
             state = "finished"
         else:
-            controller.pinLow(powerPin)
+            powerOff()
             call(["./tpgrep.sh",serialNumber])
             print colored(serialNumber + " Board failed!", 'red')
             testProcessor.errors = "Failed:" + testProcessor.errors
@@ -663,14 +755,14 @@ while(testing):
         testProcessor.showErrors()
         
     elif state == "board fail":
-        controller.pinLow(powerPin)
+        powerOff()
         print "Unable to complete testing process!"
         print colored(serialNumber + " Board failed",'red')
         with open(logFile, "a") as tpLog:
             tpLog.write(serialNumber + ' Failed\n')
         testProcessor.verifyAllTests()
         testProcessor.showErrors()
-        controller.pinLow(powerPin)
+        powerOff()
         testProcessor.errors = "Failed:" + testProcessor.errors
         print "Restarting test controller..."
         controller.restart()
@@ -694,11 +786,11 @@ while(testing):
         testStorage = psycopg2.connect(postgresInfo)
         cursor = testStorage.cursor()
         #cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson ))
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings) ))
         testStorage.commit()
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
-        controller.pinLow(powerPin)
+        powerOff()
         if testjig == "rambo":
             controller.home(homingRate, wait = True)
         state = "start" 
