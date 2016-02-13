@@ -21,7 +21,7 @@ from atmega import *
 from testinterface import *
 import psycopg2
 from subprocess import call
-
+import shlex
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
@@ -29,6 +29,9 @@ version = subprocess.check_output(['git', '--git-dir='+directory+'/.git',
                                    'rev-parse', 'HEAD'])
 version = version.strip()
 print "Git version - " + str(version)
+
+gitdiff = subprocess.Popen( shlex.split('/usr/bin/git --git-dir='+directory+'/.git diff --exit-code --quiet') ).wait()
+gitbranch = subprocess.check_output(shlex.split('/usr/bin/git --git-dir='+directory+'/.git rev-parse --abbrev-ref HEAD'))
 
 print "Connecting to database..."
 # Open our file outside of git repo which has database location, password, etc
@@ -739,7 +742,7 @@ while(testing):
         testStorage = psycopg2.connect(postgresInfo)
         cursor = testStorage.cursor()
         #cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings) ))
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch ))
         testStorage.commit()
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
