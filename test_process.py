@@ -340,6 +340,12 @@ while(testing):
             if serialNumber == "logoff":
                  controller.pinLow(relayLogicPin)
                  continue
+            if serialNumber == "smpsoff":
+                 controller.pinHigh(9)
+                 continue
+            if serialNumber == "smpson":
+                 controller.pinLow(9)
+                 continue
             if serialNumber == "moton":
                  controller.pinHigh(relayMotorsPin)
                  continue
