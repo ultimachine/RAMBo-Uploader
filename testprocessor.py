@@ -47,7 +47,7 @@ class TestProcessor():
             print "...Timed out at supply test"
             return False
         for i in [0,1]:
-            if 11.4 <= self.supplyVoltages[i] <= 12.5:
+            if (11.4 <= self.supplyVoltages[i] <= 12.5) or (23.0 <= self.supplyVoltages[i] <= 25.0):
                 pass
             else:
                 self.errors += "Test " + self.supplyNames[i] + " supply\n"
