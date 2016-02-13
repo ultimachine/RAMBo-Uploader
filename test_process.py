@@ -677,11 +677,11 @@ while(testing):
             print "Reading thermistors failed."
             state = "board fail"
         else:
-            #state = "program marlin"
+            state = "program marlin"
+            if isOverCurrent(threshold=2.0): state = "board fail"
             targetMotorsDisable()
             time.sleep(1.5)
             if isOverCurrent(): state = "board fail"
-            else: state = "program marlin"
 
     elif state == "program marlin":
         print "Disconnecting target from test server..."
