@@ -71,6 +71,7 @@ thermistorPins = [0, 1, 2, 7]
 logFile = '/home/ultimachine/tplog.txt'
 testjig = "rambo" #used to tell state machine if it needs to clamp or not
 
+relayBedMotorsPin = 4
 relayBedPin = 4
 relayLogicPin = 5
 relayMotorsPin = 2
@@ -80,7 +81,6 @@ qcPerson = None
 testPerson = None
 
 overCurrentChecking = True
-meanAmps = None
 currentReadings = []
 
 #set target COM port from first command line argument
@@ -233,92 +233,45 @@ def home():
                  controller.runSteppers(frequency = clampingRate, steps = 300,direction = controller.UP, wait = False)
 def powerOn():
                  controller.pinHigh(powerPin)
-                 controller.pinHigh(relayBedPin)
-                 controller.pinHigh(relayLogicPin)
-                 return controller.pinHigh(relayMotorsPin)
+                 controller.pinHigh(relayBedMotorsPin)
+                 return controller.pinHigh(relayLogicPin)
 def powerOff():
                  controller.pinLow(powerPin)
-                 controller.pinLow(relayBedPin)
+                 controller.pinLow(relayBedMotorsPin)
                  controller.pinLow(relayLogicPin)
-                 controller.pinLow(relayMotorsPin)
 
-def isOverCurrent():
-                 print "Testing Idle Current Usage..."
-                 global meanAmps
+def isOverCurrent(threshold = 0.02):
                  global testProcessor
-                 currentReadings.append(checkCurrent())
-                 if not overCurrentChecking: 
-                     return False
-                 if (meanAmps < 0.03):
-                     return False
-
-                 powerOff()
-                 testProcessor.errors += "Over max isolated bed amps.\n"
-                 print colored("Board is OVER MAXIMUM idle current...",'red')
-                 print colored("Check for reverse capacitor or short circuit...",'yellow')
-                 return True
-
-
-def checkCurrent():
-                 global meanAmps
                  adcReadings = []
+
+                 time.sleep(0.1)
                  for count in range(5):
                       controller.analogRead(1)
                  for count in range(20):
                       adcReadings += controller.analogRead(1)
                  meanAmps = round(sum(adcReadings)/len(adcReadings) * (5.0/1024.0),4)
                  print colored("current_reading: " + str(meanAmps) + " Amps",'blue')
-                 return meanAmps
+                 currentReadings.append(meanAmps)
+                 if not overCurrentChecking: 
+                     return False
 
-def isOverCurrentIsolatedBed():
-                 global currentReadings
-                 global meanAmps
-                 global testProcessor
-                 currentReadings = []
-                 controller.pinLow(relayLogicPin)
-                 controller.pinLow(relayMotorsPin)
-                 controller.pinHigh(relayBedPin)
-                 time.sleep(0.1)
-                 currentReadings.append(checkCurrent())
-                 if meanAmps > 0.0:
-                     if not overCurrentChecking: return False
-                     controller.pinLow(relayBedPin)
-                     testProcessor.errors += "Over max isolated bed amps.\n"
-                     print colored("Check for reversed capacitor (C66) or leaky circuit (heatbed VIN)!!!!!",'red')
+                 if(meanAmps > threshold):
+                     powerOff()
+                     testProcessor.errors += "Over " + str(threshold) + " amps\n"
+                     print colored("Board is OVER MAXIMUM current threshold: " + str(threshold),'red')
+                     print colored("Check for reverse capacitor or short circuit...",'yellow')
                      return True
                  return False
 
-def isOverCurrentIsolatedMotors():
-                 global currentReadings
-                 global meanAmps
-                 global testProcessor
-                 controller.pinLow(relayLogicPin)
-                 controller.pinHigh(relayMotorsPin)
-                 time.sleep(0.1)
-                 currentReadings.append(checkCurrent())
-                 if meanAmps > 0.0:
-                     if not overCurrentChecking: return False
-                     controller.pinLow(relayMotorsPin)
-                     testProcessor.errors += "Over max isolated motor amps.\n"
-                     print colored("Check for reversed large capacitor capacitor (C76) or leaky circuit (motors VIN)!!!!!",'red')
-                     return True
-                 return False
+def isOverCurrentBedMotors():
+                  controller.pinHigh(relayBedMotorsPin)
+                  return isOverCurrent(threshold = 0.0)
 
-def isOverCurrentIsolatedLogic():
-                 global currentReadings
-                 global meanAmps
-                 global testProcessor
-                 controller.pinLow(relayMotorsPin)
-                 controller.pinHigh(relayLogicPin)
-                 time.sleep(0.1)
-                 currentReadings.append(checkCurrent())
-                 if meanAmps > 0.02:
-                     if not overCurrentChecking: return False
-                     controller.pinLow(relayLogicPin)
-                     testProcessor.errors += "Over max isolated logic amps.\n"
-                     print colored("Check for reversed middle capacitor capacitor (C65) or leaky circuit (logic VIN)!!!!!",'red')
-                     return True
-                 return False
+
+def isOverCurrentLogic():
+                  controller.pinLow(relayBedMotorsPin)
+                  controller.pinHigh(relayLogicPin)
+                  return isOverCurrent(threshold = 0.2)
 
 def targetMotorsDisable():
                  ramboMotorEnablePins = [29,28,27,26,25]
@@ -543,16 +496,16 @@ while(testing):
             
     elif state == "powering":   
         print "Powering Board..."
-        if isOverCurrentIsolatedBed():
+        if isOverCurrentBedMotors():
             state = "board fail"
-        elif isOverCurrentIsolatedMotors():
-            state = "board fail"
-        elif isOverCurrentIsolatedLogic():
+        elif isOverCurrentLogic():
             state = "board fail"
         elif powerOn():
-            time.sleep(0.5)
-            if isOverCurrent(): state = "board fail"
-            else: state = "supply test"
+            time.sleep(0.2)
+            if isOverCurrent(): 
+                state = "board fail"
+            else:
+                state = "supply test"
         else:
             print "Powering failed."
             state = "board fail"
