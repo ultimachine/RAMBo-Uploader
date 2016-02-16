@@ -66,7 +66,9 @@ clampingLength = 16000 #16200
 monitorFrequency = 1000
 stepperTestRPS = 5 #3 #rotations per second for the stepper test
 #controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64033353730351918201-if00"
-controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64037323235351607090-if00"
+controllerPorts  = ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64037323235351607090-if00"] #10006390 Rambo Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_7403532343435170A021-if00"] #10029696 Mini-Rambo Controller
+controllerPort = None
 targetPort = "/dev/ttyACM1"
 testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
 vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
@@ -94,6 +96,9 @@ testPerson = None
 
 overCurrentChecking = True
 currentReadings = []
+
+for item in controllerPorts:
+    if os.path.exists(item): controllerPort = item
 
 #set target COM port from first command line argument
 if len(sys.argv) >= 2:
@@ -199,6 +204,11 @@ if len(sys.argv) >= 3:
     if sys.argv[2] == "minirambo":
         set_minirambo_configs()
 
+if testjig == "minirambo":
+    thresholdCurrent = 0.015
+if testjig == "rambo":
+    thresholdCurrent = 0.02
+
 #Setup shutdown handlers
 def signal_handler(signal, frame):
     print "Shutting down test server..."
@@ -259,7 +269,7 @@ def smpsOff():
                  time.sleep(0.6)
                  return controller.pinHigh(9)
 
-def isOverCurrent(threshold = 0.02):
+def isOverCurrent(threshold = thresholdCurrent):
                  global testProcessor
                  adcReadings = []
 
@@ -547,12 +557,15 @@ while(testing):
     elif state == "powering":   
         print "Powering Board..."
         state = "supply test"
-        powerOff()
-        smpsOff()
-        powerOn()
-        if isOverCurrent(threshold = 0.0): state = "board fail"
-        smpsOn()
+        if testjig == "rambo":
+            powerOff()
+            smpsOff()
+            powerOn()
+            if isOverCurrent(threshold = 0.0): 
+                state = "board fail"
+            smpsOn()
         if state != "board fail":
+            powerOn()
             if isOverCurrent(): 
                 state = "board fail"
         if state == "board fail":
@@ -736,7 +749,7 @@ while(testing):
     elif state == "testamps":
         state = "processing"
         if isOverCurrent(): state = "board fail"
-        if state =="processing":
+        if state =="processing" and testjig =="rambo":
             smpsOff()
             if isOverCurrent(): state = "board fail"
 
