@@ -251,6 +251,13 @@ def powerOff():
                  controller.pinLow(powerPin)
                  controller.pinLow(relayBedMotorsPin)
                  controller.pinLow(relayLogicPin)
+def smpsOn():
+                 time.sleep(0.1)
+                 return controller.pinLow(9)
+
+def smpsOff():
+                 time.sleep(0.6)
+                 return controller.pinHigh(9)
 
 def isOverCurrent(threshold = 0.02):
                  global testProcessor
@@ -283,7 +290,7 @@ def isOverCurrentBedMotors():
 def isOverCurrentLogic():
                   controller.pinLow(relayBedMotorsPin)
                   controller.pinHigh(relayLogicPin)
-                  return isOverCurrent(threshold = 0.02)
+                  return isOverCurrent()
 
 def targetMotorsDisable():
                  ramboMotorEnablePins = [29,28,27,26,25]
@@ -516,19 +523,17 @@ while(testing):
             
     elif state == "powering":   
         print "Powering Board..."
-        if isOverCurrentBedMotors():
-            state = "board fail"
-        elif isOverCurrentLogic():
-            state = "board fail"
-        elif powerOn():
-            time.sleep(0.2)
+        state = "supply test"
+        powerOff()
+        smpsOff()
+        powerOn()
+        if isOverCurrent(threshold = 0.0): state = "board fail"
+        smpsOn()
+        if state != "board fail":
             if isOverCurrent(): 
                 state = "board fail"
-            else:
-                state = "supply test"
-        else:
+        if state == "board fail":
             print "Powering failed."
-            state = "board fail"
             
     elif state == "fullstep":
         print "Testing full step forward..."
@@ -708,6 +713,9 @@ while(testing):
     elif state == "testamps":
         state = "processing"
         if isOverCurrent(): state = "board fail"
+        if state =="processing":
+            smpsOff()
+            if isOverCurrent(): state = "board fail"
 
     elif state == "processing":
         if testProcessor.verifyAllTests():
