@@ -176,7 +176,7 @@ vendorFirmware.bootloader = vendorFirmwarePath
 #Setup up avrdude config for upload to an Arduino.
 avrdude = Avrdude()
 avrdude.path = "/usr/bin/avrdude"
-avrdude.programmer = "stk500v2"
+avrdude.programmer = "wiring" #stk500v2
 avrdude.port = targetPort
 avrdude.baudrate = "115200"
 avrdude.autoEraseFlash = True
