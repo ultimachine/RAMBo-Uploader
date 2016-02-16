@@ -695,8 +695,8 @@ while(testing):
             state = "board fail"
 
     elif state == "testamps":
-        if isOverCurrent(): state = "board fail"
         state = "processing"
+        if isOverCurrent(): state = "board fail"
 
     elif state == "processing":
         if testProcessor.verifyAllTests():
