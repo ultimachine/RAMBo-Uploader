@@ -509,9 +509,9 @@ while(testing):
             state = "clamping"
             print "Press button to begin test"
             controller.waitForStart() #Blocks until button pressed
-            iserial = getInternalSerialNumber()
-            if iserial == 0: 
-                state = "start"
+        iserial = getInternalSerialNumber()
+        if iserial == 0: 
+            state = "start"
         if testjig == "minirambo":
             state = "powering"
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
