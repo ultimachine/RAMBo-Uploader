@@ -31,7 +31,16 @@ version = version.strip()
 print "Git version - " + str(version)
 
 gitdiff = subprocess.Popen( shlex.split('/usr/bin/git --git-dir='+directory+'/.git diff --exit-code --quiet') ).wait()
+#if not running "test_process.py" then set gitdiff to indicate we're not running a clean test program.
+if os.path.split(os.path.realpath(__file__))[1] != "test_process.py":
+    gitdiff = 1
+
+gitstatus = subprocess.check_output(shlex.split('git status --porcelain'))
+for line in gitstatus.splitlines():
+  if line.split()[0] == 'M': gitdiff = 1
+
 gitbranch = subprocess.check_output(shlex.split('/usr/bin/git --git-dir='+directory+'/.git rev-parse --abbrev-ref HEAD'))
+
 
 print "Connecting to database..."
 # Open our file outside of git repo which has database location, password, etc
@@ -288,6 +297,8 @@ while(testing):
         currentReadings = []
 
         while True:
+            if gitdiff == 1:
+                 print colored("Warning: Not a CLEAN program. Alert your nearest administrator immediately!",'red')
             print "Enter serial number : "
             serialNumber = raw_input().strip()
             if serialNumber == "m":
