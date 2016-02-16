@@ -266,7 +266,7 @@ def smpsOn():
                  return controller.pinLow(9)
 
 def smpsOff():
-                 time.sleep(0.6)
+                 time.sleep(0.8)
                  return controller.pinHigh(9)
 
 def isOverCurrent(threshold = thresholdCurrent):
