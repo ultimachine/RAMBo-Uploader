@@ -262,12 +262,13 @@ def powerOff():
                  controller.pinLow(relayBedMotorsPin)
                  controller.pinLow(relayLogicPin)
 def smpsOn():
+                 controller.pinLow(9)
                  time.sleep(0.1)
-                 return controller.pinLow(9)
+
 
 def smpsOff():
-                 time.sleep(0.8)
-                 return controller.pinHigh(9)
+                 controller.pinHigh(9)
+                 time.sleep(0.2)
 
 def isOverCurrent(threshold = thresholdCurrent):
                  global testProcessor
