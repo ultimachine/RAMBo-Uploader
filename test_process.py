@@ -297,13 +297,30 @@ def targetMotorsDisable():
                  for enablePin in ramboMotorEnablePins:
                       target.pinHigh(enablePin)
 
+def beep():
+                    call(["beep","-f 2250"])
+
+def getInternalSerialNumber():
+        iserial = 0
+        #/sbin/udevadm info --query=property --name=/dev/ttyACM1 | awk -F'=' '/SHORT/ {print $2}
+        #for line in subprocess.check_output(shlex.split("/sbin/udevadm info --query=property --name=/dev/ttyACM1")).splitlines():
+        iserialproc = subprocess.Popen(shlex.split("/sbin/udevadm info --query=property --name=" + targetPort),stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        for line in iserialproc.communicate()[0].splitlines():
+            if line.split('=')[0] == "ID_SERIAL_SHORT": iserial = line.split('=')[1]
+        if iserial == 0:
+            beep()
+            print colored("USB Serial port does not exist or is not connected.","yellow")
+        return iserial
+
 while(testing):
     if state == "start":
 	failCode = None
 	failNote = None
         currentReadings = []
+        iserial = None
 
         while True:
+            iserial = None
             if gitdiff == 1:
                  print colored("Warning: Not a CLEAN program. Alert your nearest administrator immediately!",'red')
             print "Enter serial number : "
@@ -363,6 +380,9 @@ while(testing):
                  continue
             if serialNumber == "smpson":
                  controller.pinLow(9)
+                 continue
+            if serialNumber == "id":
+                 print str(getInternalSerialNumber())
                  continue
             if serialNumber == "moton":
                  controller.pinHigh(relayMotorsPin)
@@ -476,9 +496,12 @@ while(testing):
             tpLog.write(serialNumber + '\n') 
 
         if testjig == "rambo":
+            state = "clamping"
             print "Press button to begin test"
             controller.waitForStart() #Blocks until button pressed
-            state = "clamping"
+            iserial = getInternalSerialNumber()
+            if iserial == 0: 
+                state = "start"
         if testjig == "minirambo":
             state = "powering"
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -767,7 +790,7 @@ while(testing):
         testStorage = psycopg2.connect(postgresInfo)
         cursor = testStorage.cursor()
         #cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch ))
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch, iserial) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch, iserial ))
         testStorage.commit()
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
