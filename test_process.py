@@ -268,7 +268,6 @@ def smpsOn():
 
 def smpsOff():
                  controller.pinHigh(9)
-                 time.sleep(0.2)
 
 def isOverCurrent(threshold = thresholdCurrent):
                  global testProcessor
@@ -518,6 +517,7 @@ while(testing):
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     elif state == "clamping":
+        smpsOff()
         print "Clamping test jig..."
         controller.home(rate = homingRate, wait = False)
         controller.runSteppers(frequency = clampingRate, steps = clampingLength,
@@ -559,9 +559,8 @@ while(testing):
         print "Powering Board..."
         state = "supply test"
         if testjig == "rambo":
-            powerOff()
-            smpsOff()
             powerOn()
+            time.sleep(0.1)
             if isOverCurrent(threshold = 0.0): 
                 state = "board fail"
             smpsOn()
