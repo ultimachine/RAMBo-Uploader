@@ -274,7 +274,7 @@ def isOverCurrentBedMotors():
 def isOverCurrentLogic():
                   controller.pinLow(relayBedMotorsPin)
                   controller.pinHigh(relayLogicPin)
-                  return isOverCurrent(threshold = 0.2)
+                  return isOverCurrent(threshold = 0.02)
 
 def targetMotorsDisable():
                  ramboMotorEnablePins = [29,28,27,26,25]
