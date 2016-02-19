@@ -96,6 +96,8 @@ testPerson = None
 
 overCurrentChecking = True
 currentReadings = []
+saveFirmware = False
+
 
 for item in controllerPorts:
     if os.path.exists(item): controllerPort = item
@@ -485,6 +487,10 @@ while(testing):
                  print "Uploading Test Firmware!!!!!!!"
                  avrdude.upload(testFirmware, timeout = 10)
                  continue
+            if serialNumber == "savefw":
+                 print "Enabling Save FW"
+                 saveFirmware = True
+                 continue
 
             try: 
                 sNum = int(serialNumber)
@@ -532,6 +538,11 @@ while(testing):
 
     elif state == "program for test":
         print "Programming target with test firmware..."
+        if saveFirmware:
+            print "Saving Firmware!!!"
+            savefwcmd = "avrdude -V -pm2560 -cwiring -b 2000000 -Uflash:r:/home/ultimachine/fw/" + serialNumber + time.strftime(".%Y.%m.%d.%H.%M.hex:i -P") + targetPort
+            savefwproc = subprocess.Popen(shlex.split(savefwcmd)).wait()
+
         if avrdude.upload(testFirmware, timeout = 10):
             state = "connecting target"
         else:
