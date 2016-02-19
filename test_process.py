@@ -540,7 +540,8 @@ while(testing):
         print "Programming target with test firmware..."
         if saveFirmware:
             print "Saving Firmware!!!"
-            savefwcmd = "avrdude -V -pm2560 -cwiring -b 2000000 -Uflash:r:/home/ultimachine/fw/" + serialNumber + time.strftime(".%Y.%m.%d.%H.%M.hex:i -P") + targetPort
+            savefilename = "/home/ultimachine/fw/" + serialNumber + time.strftime(".%Y.%m.%d.%H.%M")
+            savefwcmd = "avrdude -V -pm2560 -cwiring -b 2000000 -Uflash:r:"+savefilename+".hex:i -Ueeprom:r:"+savefilename+".eeprom:i -P"+targetPort
             savefwproc = subprocess.Popen(shlex.split(savefwcmd)).wait()
 
         if avrdude.upload(testFirmware, timeout = 10):
