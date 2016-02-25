@@ -511,15 +511,19 @@ while(testing):
         with open(logFile, "a") as tpLog:
             tpLog.write(serialNumber + '\n') 
 
+        print "Press button to begin test"
+        controller.waitForStart() #Blocks until button pressed
+
         if testjig == "rambo":
             state = "clamping"
-            print "Press button to begin test"
-            controller.waitForStart() #Blocks until button pressed
+        if testjig == "minirambo":
+            state = "powering"
+
         iserial = getInternalSerialNumber()
         if iserial == 0: 
             state = "start"
-        if testjig == "minirambo":
-            state = "powering"
+            continue
+
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     elif state == "clamping":
