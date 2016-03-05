@@ -818,7 +818,7 @@ while(testing):
         testStorage = psycopg2.connect(postgresInfo)
         cursor = testStorage.cursor()
         #cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch, iserial) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch, iserial ))
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch, iserial, testjig) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch, iserial, testjig ))
         testStorage.commit()
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
