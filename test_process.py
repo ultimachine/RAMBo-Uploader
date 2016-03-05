@@ -742,7 +742,10 @@ while(testing):
             state = "board fail"
         else:
             state = "program marlin"
-            if isOverCurrent(threshold=2.0): state = "board fail"
+            if testjig=="rambo":
+                if isOverCurrent(threshold=1.35): state = "board fail"
+            if testjig=="minirambo":
+                if isOverCurrent(threshold=1.0): state = "board fail"
             targetMotorsDisable()
             time.sleep(1.5)
             if isOverCurrent(): state = "board fail"
