@@ -582,7 +582,24 @@ while(testing):
                 state = "board fail"
         if state == "board fail":
             print "Powering failed."
-            
+
+    elif state == "dryrunfullstep":
+        for drycount in range(40):
+            print "DRYRUN " + str(drycount) + " Testing full step forward..."
+            target.setMicroStepping(1)
+            target.runSteppers(frequency = 200*stepperTestRPS, steps = 200,direction = target.UP, triggerPin = triggerPin, wait = False)
+            controller.monitorSteppers(pin = monitorPin,frequency = monitorFrequency)
+            print "DRYRUN " + str(drycount) + " Testing full step reverse..."
+            target.runSteppers(frequency = 200*stepperTestRPS, steps = 200,direction = target.DOWN, triggerPin = triggerPin, wait = False)
+            controller.monitorSteppers(pin = monitorPin,frequency = monitorFrequency)
+            finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
+            if -1 in testProcessor.fullStep or not finished:
+                print "Monitoring failed."
+                state = "board fail"
+                break
+            else:
+                state = "fullstep"
+
     elif state == "fullstep":
         print "Testing full step forward..."
         target.setMicroStepping(1)
@@ -656,7 +673,7 @@ while(testing):
         if -1 in testProcessor.sixteenthStep or not finished:
             print "Monitoring failed."
             state = "board fail"
-        else:    
+        else:
             state = "thermistors"
 
     elif state == "vrefs":
@@ -667,7 +684,8 @@ while(testing):
             print "Reading references failed."
             state = "board fail"
         else:     
-            state = "fullstep"
+            state = "dryrunfullstep"
+#            state = "fullstep"
 #            state = "thermistors"
 #            state = "processing"
 
