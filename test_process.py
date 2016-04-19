@@ -602,7 +602,9 @@ while(testing):
             print "Powering failed."
 
     elif state == "dryrunfullstep":
-        for drycount in range(40):
+        state = "fullstep"
+        if testjig == "rambo":
+          for drycount in range(40):
             print "DRYRUN " + str(drycount) + " Testing full step forward..."
             target.setMicroStepping(1)
             target.runSteppers(frequency = 200*stepperTestRPS, steps = 200,direction = target.UP, triggerPin = triggerPin, wait = False)
