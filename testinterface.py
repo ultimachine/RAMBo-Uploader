@@ -64,6 +64,10 @@ class TestInterface():
     def setMicroStepping(self, level):
         self.serial.write("U"+str(level)+"_")
         return self.waitForFinish(clear = True)
+
+    def setMotorCurrent(self, level):
+        self.serial.write("V"+str(level)+"_")
+        return self.waitForFinish(clear = True)
                      
     def analogRead(self, pin): #Use Arduino analog pin numbering
         """Returns list with pin state"""
