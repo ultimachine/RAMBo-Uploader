@@ -524,6 +524,20 @@ while(testing):
             state = "start"
             continue
 
+        #Consistent iserial check: verify iserial matches first historical iserial number for the referenced serial number
+        testStorage = psycopg2.connect(postgresInfo)
+        cursor = testStorage.cursor()
+        cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
+        rows = cursor.fetchall()
+        if(len(rows)):
+          print "historial: ", rows
+          print "this 32u2 iserial: ", iserial
+          if not iserial == str(rows[0][2]):
+            print colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
+            state = "start"
+            continue
+
+
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     elif state == "clamping":
@@ -586,7 +600,26 @@ while(testing):
                 state = "board fail"
         if state == "board fail":
             print "Powering failed."
-            
+
+    elif state == "dryrunfullstep":
+        state = "fullstep"
+        if testjig == "rambo":
+          for drycount in range(40):
+            print "DRYRUN " + str(drycount) + " Testing full step forward..."
+            target.setMicroStepping(1)
+            target.runSteppers(frequency = 200*stepperTestRPS, steps = 200,direction = target.UP, triggerPin = triggerPin, wait = False)
+            controller.monitorSteppers(pin = monitorPin,frequency = monitorFrequency)
+            print "DRYRUN " + str(drycount) + " Testing full step reverse..."
+            target.runSteppers(frequency = 200*stepperTestRPS, steps = 200,direction = target.DOWN, triggerPin = triggerPin, wait = False)
+            controller.monitorSteppers(pin = monitorPin,frequency = monitorFrequency)
+            finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
+            if -1 in testProcessor.fullStep or not finished:
+                print "Monitoring failed."
+                state = "board fail"
+                break
+            else:
+                state = "fullstep"
+
     elif state == "fullstep":
         print "Testing full step forward..."
         target.setMicroStepping(1)
@@ -660,7 +693,7 @@ while(testing):
         if -1 in testProcessor.sixteenthStep or not finished:
             print "Monitoring failed."
             state = "board fail"
-        else:    
+        else:
             state = "thermistors"
 
     elif state == "vrefs":
@@ -671,7 +704,8 @@ while(testing):
             print "Reading references failed."
             state = "board fail"
         else:     
-            state = "fullstep"
+            state = "dryrunfullstep"
+#            state = "fullstep"
 #            state = "thermistors"
 #            state = "processing"
 
