@@ -142,7 +142,7 @@ class TestProcessor():
         if self.supplys: #Just realized this is spelled wrong
             print "Supply voltage values..."
             self._analogToVoltage(readings = self.supplys)
-            print self.supplyVoltages
+            print str(self.supplys) + " -> " + str(self.supplyVoltages)
             passed &= self.testSupplys()
 
         if self.vrefs:
@@ -236,5 +236,7 @@ class TestProcessor():
             
     def _analogToVoltage(self, readings = [], voltage = 5, bits = 10, dividerFactor = 0.091):
         #divider factor is R2/(R1+R2)
+        #R1 = 47K Ohm
+        #R2 = 4700 Ohm
         for val in readings:
             self.supplyVoltages += [(val/pow(2, bits))*(voltage/dividerFactor)]
