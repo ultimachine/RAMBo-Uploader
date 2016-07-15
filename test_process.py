@@ -605,7 +605,7 @@ while(testing):
 
     elif state == "dryrunfullstep":
         state = "fullstep"
-        if testjig == "rambo":
+        if testjig == "disablerambodryrun":
           for drycount in range(40):
             print "DRYRUN " + str(drycount) + " Testing full step forward..."
             target.setMicroStepping(1)
