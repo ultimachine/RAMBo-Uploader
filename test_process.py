@@ -596,7 +596,7 @@ while(testing):
 
     elif state == "iserialcheck":
         state = "program for test"
-        time.sleep(0.2)
+        time.sleep(0.4)
 
         #get iserial
         iserial = getInternalSerialNumber()
