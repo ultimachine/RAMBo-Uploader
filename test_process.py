@@ -67,6 +67,7 @@ monitorFrequency = 1000
 stepperTestRPS = 5 #3 #rotations per second for the stepper test
 #controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64033353730351918201-if00"
 controllerPorts  = ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64037323235351607090-if00"] #10006390 Rambo Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74034313938351C0A291-if00"] #10024352 Rambo Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_7403532343435170A021-if00"] #10029696 Mini-Rambo Controller
 controllerPort = None
 targetPort = "/dev/ttyACM1"
