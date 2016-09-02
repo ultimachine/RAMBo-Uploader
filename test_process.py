@@ -556,8 +556,18 @@ while(testing):
         print "Uploading Bootloader and setting fuses..."
         #avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
         #avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
-        bootcmd32u2 = '/usr/bin/timeout --foreground 8 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
-        bootcmd2560 = '/usr/bin/timeout --foreground 8 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
+
+        hellocmd32u2 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII'
+        hellocmd2560 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII'
+        hello32u2 = subprocess.Popen( shlex.split( hellocmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
+        hello2560 = subprocess.Popen( shlex.split( hellocmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
+        hello32u2.wait()
+        hello2560.wait()
+        print "Hello avrispmkII 32u2 return code: " + str( hello32u2.returncode )
+        print "Hello avrispmkII 2560 return code: " + str( hello2560.returncode )
+
+        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
+        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
         bootloader32u2 = subprocess.Popen( shlex.split( bootcmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader32u2.wait()
@@ -587,8 +597,8 @@ while(testing):
                 state = "board fail"
                 continue
 
-        fusescmd32u2 = '/usr/bin/timeout --foreground 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -Uefuse:v:0xF4:m -Uhfuse:v:0xD9:m -Ulfuse:v:0xEF:m -Ulock:v:0x0F:m'
-        fusescmd2560 = '/usr/bin/timeout --foreground 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m -Ulock:v:0x0F:m'
+        fusescmd32u2 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -Uefuse:v:0xF4:m -Uhfuse:v:0xD9:m -Ulfuse:v:0xEF:m -Ulock:v:0x0F:m'
+        fusescmd2560 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m -Ulock:v:0x0F:m'
         verifyfuses32u2 = subprocess.Popen( shlex.split( fusescmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
         verifyfuses2560 = subprocess.Popen( shlex.split( fusescmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
         verifyfuses32u2.wait()
