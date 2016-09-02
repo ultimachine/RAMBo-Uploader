@@ -785,7 +785,7 @@ while(testing):
             if testjig=="rambo":
                 if isOverCurrent(threshold=1.4): state = "board fail"
             if testjig=="minirambo":
-                if isOverCurrent(threshold=1.0): state = "board fail"
+                if isOverCurrent(threshold=1.05): state = "board fail"
             targetMotorsDisable()
             time.sleep(1.5)
             if isOverCurrent(): state = "board fail"
