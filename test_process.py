@@ -325,9 +325,9 @@ def getInternalSerialNumber():
             print colored("USB Serial port does not exist or is not connected.","yellow")
         return iserial
 
+controller.setMotorCurrent(255)
 while(testing):
     if state == "start":
-        controller.setMotorCurrent(255)
 	failCode = None
 	failNote = None
         currentReadings = []
@@ -521,23 +521,23 @@ while(testing):
         if testjig == "minirambo":
             state = "powering"
 
-        iserial = getInternalSerialNumber()
-        if iserial == 0: 
-            state = "start"
-            continue
+        #iserial = getInternalSerialNumber()
+        #if iserial == 0:
+        #    state = "start"
+        #    continue
 
         #Consistent iserial check: verify iserial matches first historical iserial number for the referenced serial number
-        testStorage = psycopg2.connect(postgresInfo)
-        cursor = testStorage.cursor()
-        cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
-        rows = cursor.fetchall()
-        if(len(rows)):
-          print "historial: ", rows
-          print "this 32u2 iserial: ", iserial
-          if not iserial == str(rows[0][2]):
-            print colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
-            state = "start"
-            continue
+        #testStorage = psycopg2.connect(postgresInfo)
+        #cursor = testStorage.cursor()
+        #cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
+        #rows = cursor.fetchall()
+        #if(len(rows)):
+        #  print "historial: ", rows
+        #  print "this 32u2 iserial: ", iserial
+        #  if not iserial == str(rows[0][2]):
+        #    print colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
+        #    state = "start"
+        #    continue
 
 
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -552,10 +552,99 @@ while(testing):
 #        state = "program for test"
 
     elif state == "uploading":
+        state = "iserialcheck"
         print "Uploading Bootloader and setting fuses..."
-        avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
-        avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
+        #avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
+        #avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
+        bootcmd32u2 = '/usr/bin/timeout --foreground 8 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
+        bootcmd2560 = '/usr/bin/timeout --foreground 8 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
+        bootloader32u2 = subprocess.Popen( shlex.split( bootcmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
+        bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
+        bootloader32u2.wait()
+        bootloader2560.wait()
 
+        logmsg=serialNumber + " "
+        if bootloader2560.returncode:
+                print bootloader2560.communicate()[0]
+                msg = colored("2560 Btldr FAILED!! ",'red')
+                logmsg = logmsg + msg + str(bootloader2560.returncode)
+                print msg
+        if bootloader2560.returncode == 0:
+                msg = colored("2560 Btldr Success! ",'green')
+                logmsg = logmsg + msg
+                print msg
+        if bootloader32u2.returncode:
+                print bootloader32u2.communicate()[0]
+                msg = colored("32u2 Btldr FAILED!! ",'red')
+                logmsg = logmsg + msg + str(bootloader32u2.returncode)
+                print msg
+        if bootloader32u2.returncode == 0:
+                msg = colored("32u2 Btldr Success! ",'green')
+                logmsg = logmsg + msg
+                print msg
+
+        if bootloader32u2.returncode or bootloader2560.returncode:
+                state = "board fail"
+                continue
+
+        fusescmd32u2 = '/usr/bin/timeout --foreground 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -Uefuse:v:0xF4:m -Uhfuse:v:0xD9:m -Ulfuse:v:0xEF:m -Ulock:v:0x0F:m'
+        fusescmd2560 = '/usr/bin/timeout --foreground 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m -Ulock:v:0x0F:m'
+        verifyfuses32u2 = subprocess.Popen( shlex.split( fusescmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
+        verifyfuses2560 = subprocess.Popen( shlex.split( fusescmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
+        verifyfuses32u2.wait()
+        verifyfuses2560.wait()
+
+        if verifyfuses2560.returncode:
+                print verifyfuses2560.communicate()[0]
+                msg = colored("2560 Fuses FAILED!! ",'red')
+                logmsg = logmsg + msg + str(verifyfuses2560.returncode)
+                print msg
+        if verifyfuses2560.returncode == 0:
+                msg = colored("2560 Fuses Success! ",'green')
+                logmsg = logmsg + msg
+                print msg
+        if verifyfuses32u2.returncode:
+                print verifyfuses32u2.communicate()[0]
+                msg = colored("32u2 Fuses FAILED!!",'red')
+                logmsg = logmsg + msg + str(verifyfuses32u2.returncode) + "\n"
+                print msg
+        if verifyfuses32u2.returncode == 0:
+                msg = colored("32u2 Fuses Success!",'green')
+                logmsg = logmsg + msg + "\n"
+                print msg
+        with open(directory + "/boot.log", "a") as bootlog:
+                bootlog.write(logmsg)
+                bootlog.close()
+
+        if verifyfuses32u2.returncode or verifyfuses2560.returncode:
+                state = "board fail"
+
+    elif state == "iserialcheck":
+        state = "program for test"
+        time.sleep(0.8)
+
+        #get iserial
+        iserial = getInternalSerialNumber()
+
+        #fail if no iserial
+        if iserial == 0:
+                state = "board fail"
+                continue
+
+        #Duplicate serial check: verify iserial matches first historical iserial number for the referenced serial number
+        testStorage = psycopg2.connect(postgresInfo)
+        cursor = testStorage.cursor()
+        cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
+        rows = cursor.fetchall()
+        if(len(rows)):
+                print "historial: ", rows
+                print "this 32u2 iserial: ", iserial
+                if not iserial == str(rows[0][2]):
+                        print colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
+                        state = "board fail"
+                        continue
+
+        #time.sleep(2)
     elif state == "program for test":
         print "Programming target with test firmware..."
         if saveFirmware:
@@ -719,7 +808,8 @@ while(testing):
             print "Reading supplies failed."
             state = "board fail"
         else:     
-            state = "program for test" 
+            state = "uploading"
+            #state = "program for test"
  
     elif state == "mosfet high":
         passed = True
