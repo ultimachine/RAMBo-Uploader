@@ -325,6 +325,75 @@ def getInternalSerialNumber():
             print colored("USB Serial port does not exist or is not connected.","yellow")
         return iserial
 
+def programBootloaders():
+        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
+        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
+        bootloader32u2 = subprocess.Popen( shlex.split( bootcmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
+        bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
+        bootloader32u2.wait()
+        bootloader2560.wait()
+
+        logmsg=serialNumber + " "
+        if bootloader2560.returncode:
+                print bootloader2560.communicate()[0]
+                msg = colored("2560 Btldr FAILED!! ",'red')
+                logmsg = logmsg + msg + str(bootloader2560.returncode)
+                print msg
+        if bootloader2560.returncode == 0:
+                msg = colored("2560 Btldr Success! ",'green')
+                logmsg = logmsg + msg
+                print msg
+        if bootloader32u2.returncode:
+                print bootloader32u2.communicate()[0]
+                msg = colored("32u2 Btldr FAILED!! ",'red')
+                logmsg = logmsg + msg + str(bootloader32u2.returncode)
+                print msg
+        if bootloader32u2.returncode == 0:
+                msg = colored("32u2 Btldr Success! ",'green')
+                logmsg = logmsg + msg
+                print msg
+
+        if bootloader32u2.returncode or bootloader2560.returncode:
+                return 1
+                #state = "board fail"
+                #continue
+
+        fusescmd32u2 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -Uefuse:v:0xF4:m -Uhfuse:v:0xD9:m -Ulfuse:v:0xEF:m -Ulock:v:0x0F:m'
+        fusescmd2560 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m -Ulock:v:0x0F:m'
+        verifyfuses32u2 = subprocess.Popen( shlex.split( fusescmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
+        verifyfuses2560 = subprocess.Popen( shlex.split( fusescmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
+        verifyfuses32u2.wait()
+        verifyfuses2560.wait()
+
+        if verifyfuses2560.returncode:
+                print verifyfuses2560.communicate()[0]
+                msg = colored("2560 Fuses FAILED!! ",'red')
+                logmsg = logmsg + msg + str(verifyfuses2560.returncode)
+                print msg
+        if verifyfuses2560.returncode == 0:
+                msg = colored("2560 Fuses Success! ",'green')
+                logmsg = logmsg + msg
+                print msg
+        if verifyfuses32u2.returncode:
+                print verifyfuses32u2.communicate()[0]
+                msg = colored("32u2 Fuses FAILED!!",'red')
+                logmsg = logmsg + msg + str(verifyfuses32u2.returncode) + "\n"
+                print msg
+        if verifyfuses32u2.returncode == 0:
+                msg = colored("32u2 Fuses Success!",'green')
+                logmsg = logmsg + msg + "\n"
+                print msg
+        with open(directory + "/boot.log", "a") as bootlog:
+                bootlog.write(logmsg)
+                bootlog.close()
+
+        if verifyfuses32u2.returncode or verifyfuses2560.returncode:
+                return 1
+                #state = "board fail"
+
+        #if bootloader is successful
+        return 0
+
 controller.setMotorCurrent(255)
 while(testing):
     if state == "start":
@@ -557,76 +626,9 @@ while(testing):
         #avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
         #avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
 
-        hellocmd32u2 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII'
-        hellocmd2560 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII'
-        hello32u2 = subprocess.Popen( shlex.split( hellocmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
-        hello2560 = subprocess.Popen( shlex.split( hellocmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
-        hello32u2.wait()
-        hello2560.wait()
-        print "Hello avrispmkII 32u2 return code: " + str( hello32u2.returncode )
-        print "Hello avrispmkII 2560 return code: " + str( hello2560.returncode )
-
-        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
-        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
-        bootloader32u2 = subprocess.Popen( shlex.split( bootcmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
-        bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
-        bootloader32u2.wait()
-        bootloader2560.wait()
-
-        logmsg=serialNumber + " "
-        if bootloader2560.returncode:
-                print bootloader2560.communicate()[0]
-                msg = colored("2560 Btldr FAILED!! ",'red')
-                logmsg = logmsg + msg + str(bootloader2560.returncode)
-                print msg
-        if bootloader2560.returncode == 0:
-                msg = colored("2560 Btldr Success! ",'green')
-                logmsg = logmsg + msg
-                print msg
-        if bootloader32u2.returncode:
-                print bootloader32u2.communicate()[0]
-                msg = colored("32u2 Btldr FAILED!! ",'red')
-                logmsg = logmsg + msg + str(bootloader32u2.returncode)
-                print msg
-        if bootloader32u2.returncode == 0:
-                msg = colored("32u2 Btldr Success! ",'green')
-                logmsg = logmsg + msg
-                print msg
-
-        if bootloader32u2.returncode or bootloader2560.returncode:
-                state = "board fail"
-                continue
-
-        fusescmd32u2 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -Uefuse:v:0xF4:m -Uhfuse:v:0xD9:m -Ulfuse:v:0xEF:m -Ulock:v:0x0F:m'
-        fusescmd2560 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m -Ulock:v:0x0F:m'
-        verifyfuses32u2 = subprocess.Popen( shlex.split( fusescmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
-        verifyfuses2560 = subprocess.Popen( shlex.split( fusescmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
-        verifyfuses32u2.wait()
-        verifyfuses2560.wait()
-
-        if verifyfuses2560.returncode:
-                print verifyfuses2560.communicate()[0]
-                msg = colored("2560 Fuses FAILED!! ",'red')
-                logmsg = logmsg + msg + str(verifyfuses2560.returncode)
-                print msg
-        if verifyfuses2560.returncode == 0:
-                msg = colored("2560 Fuses Success! ",'green')
-                logmsg = logmsg + msg
-                print msg
-        if verifyfuses32u2.returncode:
-                print verifyfuses32u2.communicate()[0]
-                msg = colored("32u2 Fuses FAILED!!",'red')
-                logmsg = logmsg + msg + str(verifyfuses32u2.returncode) + "\n"
-                print msg
-        if verifyfuses32u2.returncode == 0:
-                msg = colored("32u2 Fuses Success!",'green')
-                logmsg = logmsg + msg + "\n"
-                print msg
-        with open(directory + "/boot.log", "a") as bootlog:
-                bootlog.write(logmsg)
-                bootlog.close()
-
-        if verifyfuses32u2.returncode or verifyfuses2560.returncode:
+        if programBootloaders():
+            print colored("Trying to program bootloaders again..",'yellow')
+            if programBootloaders():
                 state = "board fail"
 
     elif state == "iserialcheck":
