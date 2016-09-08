@@ -590,23 +590,37 @@ while(testing):
         if testjig == "minirambo":
             state = "powering"
 
-        #iserial = getInternalSerialNumber()
+        iserial = getInternalSerialNumber()
         #if iserial == 0:
         #    state = "start"
         #    continue
 
-        #Consistent iserial check: verify iserial matches first historical iserial number for the referenced serial number
-        #testStorage = psycopg2.connect(postgresInfo)
-        #cursor = testStorage.cursor()
-        #cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
-        #rows = cursor.fetchall()
-        #if(len(rows)):
-        #  print "historial: ", rows
-        #  print "this 32u2 iserial: ", iserial
-        #  if not iserial == str(rows[0][2]):
-        #    print colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
-        #    state = "start"
-        #    continue
+        if iserial != 0:
+	    #Consistent iserial check: verify iserial matches first historical iserial number for the referenced serial number
+	    testStorage = psycopg2.connect(postgresInfo)
+	    cursor = testStorage.cursor()
+	    cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
+	    rows = cursor.fetchall()
+	    if(len(rows)):
+	      print "historial: ", rows
+	      print "this 32u2 iserial: ", iserial
+	      if not iserial == str(rows[0][2]):
+	        print colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
+	        state = "start"
+	        continue
+
+	    #Prevent extra serial numbers attached to single board by checking a boards first assigned serial number. 
+            #Example situation: retesting a board but scanning a fresh boards serial number. 
+            #lookup previous tests by iserial
+	    cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "iserial" = %s)""", (iserial,) )
+	    rows = cursor.fetchall()
+	    if(len(rows)):
+	      print "historial: ", rows
+	      print "this 32u2 iserial: ", iserial
+	      if not serialNumber == str(rows[0][1]):
+	        print colored("Warning! This board was first tested with a different serial number then the one provided. Try again with the correct serial number.",'yellow')
+	        state = "start"
+	        continue
 
 
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
