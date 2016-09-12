@@ -622,6 +622,8 @@ while(testing):
 	        state = "start"
 	        continue
 
+        if iserial == 0:
+            iserial = None #prevent zero from getting stored in db as the iserial.
 
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
