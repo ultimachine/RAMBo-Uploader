@@ -99,6 +99,7 @@ overCurrentChecking = True
 currentReadings = []
 saveFirmware = False
 
+btldrState = True
 
 for item in controllerPorts:
     if os.path.exists(item): controllerPort = item
@@ -408,12 +409,26 @@ while(testing):
                  print colored("Warning: Not a CLEAN program. Alert your nearest administrator immediately!",'red')
             print "Enter serial number : "
             serialNumber = raw_input().strip()
+
+	    if serialNumber=="exit":
+		print "Exiting"
+		sys.exit()
             if serialNumber == "m":
                  set_minirambo_configs()
                  continue
             if serialNumber == "r":
                  set_rambo_configs()
                  continue
+
+	    if serialNumber== "ldr":
+		 if btldrState == True:
+			btldrState = False
+			print "Bootloader is now off"
+		 else:
+			print "Bootloader is not on"
+			btldrState = True
+		 continue
+
             if serialNumber == "p":
                  print "Powering!!!!!!!"
                  powerOn()
@@ -638,14 +653,15 @@ while(testing):
 
     elif state == "uploading":
         state = "iserialcheck"
-        print "Uploading Bootloader and setting fuses..."
+        if btldrState==True:
+            print "Uploading Bootloader and setting fuses..."
         #avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
         #avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
 
-        if programBootloaders():
-            print colored("Trying to program bootloaders again..",'yellow')
             if programBootloaders():
-                state = "board fail"
+                print colored("Trying to program bootloaders again..",'yellow')
+                if programBootloaders():
+                    state = "board fail"
 
     elif state == "iserialcheck":
         state = "program for test"
