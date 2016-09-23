@@ -22,6 +22,7 @@ from testinterface import *
 import psycopg2
 from subprocess import call
 import shlex
+import termios
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
@@ -408,7 +409,7 @@ while(testing):
             if gitdiff == 1:
                  print colored("Warning: Not a CLEAN program. Alert your nearest administrator immediately!",'red')
             print "Enter serial number : "
-            serialNumber = raw_input().strip()
+            serialNumber = sys.stdin.readline().strip() #raw_input().strip()
 
 	    if serialNumber=="exit":
 		print "Exiting"
@@ -425,7 +426,7 @@ while(testing):
 			btldrState = False
 			print "Bootloader is now off"
 		 else:
-			print "Bootloader is not on"
+			print "Bootloader is now on"
 			btldrState = True
 		 continue
 
@@ -925,6 +926,11 @@ while(testing):
             if isOverCurrent(): state = "board fail"
 
     elif state == "program marlin":
+        #flush any accidently preloaded inputs
+        sys.stdin.flush()
+        sys.stdout.flush()
+        termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+
         print "Disconnecting target from test server..."
         target.close()
         print "Programming target with vendor firmware..."
@@ -979,9 +985,26 @@ while(testing):
 	state = "enter code"
 
     elif state == "enter code":
-	print "0 See Comments, 1 Valid Fail, 2 Board insertet incorrectly, 3 No Fuse, 4 Bootloader missing"
-        print "Enter code for fail: "
-        failCode = raw_input()
+        #flush any accidently preloaded inputs
+        sys.stdin.flush()
+        sys.stdout.flush()
+        termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+
+        while True:
+	    print "0 See Comments, 1 Valid Fail, 2 Board insertet incorrectly, 3 No Fuse, 4 Bootloader missing"
+            print "Enter code for fail: "
+            failCode = raw_input().strip()
+            try:
+                failCode = int(failCode)
+                if failCode in range(0,4):
+                    break
+                else:
+                    print "Invalid Entry."
+                    call(["beep","-f 2250"])
+            except:
+                print "Invalid Entry."
+                call(["beep","-f 2250"])
+
 	if failCode == "0":
             print "Enter note for fail: "
             failNote = raw_input()
