@@ -421,7 +421,7 @@ while(testing):
                  set_rambo_configs()
                  continue
 
-	    if serialNumber== "ldr":
+	    if serialNumber== "ldr" or serialNumber== "b":
 		 if btldrState == True:
 			btldrState = False
 			print "Bootloader is now off"
@@ -607,9 +607,9 @@ while(testing):
             state = "powering"
 
         iserial = getInternalSerialNumber()
-        #if iserial == 0:
-        #    state = "start"
-        #    continue
+        if not btldrState and iserial == 0:
+            state = "start"
+            continue
 
         if iserial != 0:
 	    #Consistent iserial check: verify iserial matches first historical iserial number for the referenced serial number
