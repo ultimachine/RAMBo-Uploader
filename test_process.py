@@ -986,9 +986,9 @@ while(testing):
 
     elif state == "enter code":
         #flush any accidently preloaded inputs
-        sys.stdin.flush()
-        sys.stdout.flush()
-        termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+        #sys.stdin.flush()
+        #sys.stdout.flush()
+        #termios.tcflush(sys.stdin, termios.TCIOFLUSH)
 
         while True:
 	    print "0 See Comments, 1 Valid Fail, 2 Board insertet incorrectly, 3 No Fuse, 4 Bootloader missing"
