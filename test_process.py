@@ -692,6 +692,7 @@ while(testing):
 
         #fail if no iserial
         if iserial == 0:
+                iserial = None
                 state = "board fail"
                 continue
 
