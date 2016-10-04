@@ -254,6 +254,21 @@ def clamp():
                      print "Wait worked!"
                  else:
                      print "Wait timed out!"
+def printHelp():
+		print "List of commands: \n"
+		print "help: show this list \n"
+		print "p: power on (set powerPin and relay BedMotorsPin high) \n" 
+		print "o: power off (set powerPin and relayBedMotorsPin low)\n"
+		print "r: set rambo config \n"
+		print "m: set minirambo config \n"
+		print "h: return test jig to start position \n"
+		print "b: toggle bootloader \n"
+		print "c: clamp test jig \n"
+		print "s: supply test \n"
+		print "a: current test \n"
+		print "id: print internal serial id \n"
+		
+		
 def home():
                  print "Homing!!!!!!!"
                  controller.home(rate = homingRate, wait = True)
@@ -410,6 +425,10 @@ while(testing):
                  print colored("Warning: Not a CLEAN program. Alert your nearest administrator immediately!",'red')
             print "Enter serial number : "
             serialNumber = sys.stdin.readline().strip() #raw_input().strip()
+
+	    if serialNumber=="help":
+		printHelp()
+		continue
 
 	    if serialNumber=="exit":
 		print "Exiting"
