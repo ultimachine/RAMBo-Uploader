@@ -134,8 +134,6 @@ def set_run_id(testjig):
 	else:
 	    orderRunId = rows[0][2]
     return orderRunId
-	
-orderRunId = set_run_id(testjig)
 
 def print_run_id_info(runID,testjig):
     cursor.execute("""SELECT productionrunid, productid, productionrunname, shipdate, shipqty,endqty FROM public.productionruns WHERE productionrunid=%s""",(runID,))
@@ -433,6 +431,8 @@ def programBootloaders():
 
         #if bootloader is successful
         return 0
+
+orderRunId = set_run_id(testjig)
 
 controller.setMotorCurrent(255)
 while(testing):
