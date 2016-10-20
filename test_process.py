@@ -23,6 +23,8 @@ import psycopg2
 from subprocess import call
 import shlex
 import termios
+import datetime
+import finishedGoods
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
@@ -101,6 +103,8 @@ currentReadings = []
 saveFirmware = False
 
 btldrState = True
+testStorage = psycopg2.connect(postgresInfo)
+cursor = testStorage.cursor()
 
 for item in controllerPorts:
     if os.path.exists(item): controllerPort = item
@@ -109,6 +113,40 @@ for item in controllerPorts:
 if len(sys.argv) >= 2:
     targetPort = "/dev/ttyACM" + sys.argv[1]
     print "targetPort: " + targetPort
+
+def set_run_id(testjig):
+    cursor.execute("""SELECT serial, timestamp,productionrunid,testjig FROM public.testdata WHERE testjig=%s ORDER BY timestamp DESC LIMIT 1""", (testjig,))
+    rows = cursor.fetchall()
+    if len(rows) == 0 or rows[0][2] == None:
+	if testjig == "rambo":
+	    orderRunId = 1
+        if testjig == "minirambo":
+	    orderRunId = 2
+    else:
+	orderRunId = rows[0][2]
+	cursor.execute("""SELECT * FROM productionruns WHERE productionRunId=%s""",(orderRunId,))
+	rows2 = cursor.fetchall()
+	if len(rows2) == 0:
+	    if testjig == "rambo":
+	        orderRunId = 1
+            if testjig == "minirambo":
+	        orderRunId = 2
+	else:
+	    orderRunId = rows[0][2]
+    return orderRunId
+	
+orderRunId = set_run_id(testjig)
+
+def print_run_id_info(runID,testjig):
+    cursor.execute("""SELECT productionrunid, productid, productionrunname, shipdate, shipqty,endqty FROM public.productionruns WHERE productionrunid=%s""",(runID,))
+    rows = cursor.fetchall()
+    print "Current run id: ",rows[0][0]," for ",testjig,".  Current order for: ",rows[0][2],". Shipping date: ",rows[0][3],". Order quantity: ",rows[0][4],". Current count: ",rows[0][5]
+
+def get_count_for_runid(runID):
+    cursor.execute("""SELECT serial,testresults,productionrunid FROM public.testdata WHERE testresults='Passed' AND productionrunid=%s GROUP BY serial,testresults,productionrunid """, (runID,))
+    rowsCount = cursor.fetchall()
+    count = len(rowsCount)
+    return count
 
 def set_minirambo_configs():
     global triggerPin
@@ -254,21 +292,6 @@ def clamp():
                      print "Wait worked!"
                  else:
                      print "Wait timed out!"
-def printHelp():
-		print "List of commands: \n"
-		print "help: show this list \n"
-		print "p: power on (set powerPin and relay BedMotorsPin high) \n" 
-		print "o: power off (set powerPin and relayBedMotorsPin low)\n"
-		print "r: set rambo config \n"
-		print "m: set minirambo config \n"
-		print "h: return test jig to start position \n"
-		print "b: toggle bootloader \n"
-		print "c: clamp test jig \n"
-		print "s: supply test \n"
-		print "a: current test \n"
-		print "id: print internal serial id \n"
-		
-		
 def home():
                  print "Homing!!!!!!!"
                  controller.home(rate = homingRate, wait = True)
@@ -423,13 +446,42 @@ while(testing):
             iserial = None
             if gitdiff == 1:
                  print colored("Warning: Not a CLEAN program. Alert your nearest administrator immediately!",'red')
-            print "Enter serial number : "
+	    finishedGoods.main(datetime.date.today(),cursor,testStorage,testjig=testjig)
+	    print_run_id_info(orderRunId,testjig)
+            print colored("Enter serial number : ","cyan")
             serialNumber = sys.stdin.readline().strip() #raw_input().strip()
-
-	    if serialNumber=="help":
-		printHelp()
+	    if serialNumber == "sr": #select runid
+		print "productionrunid | productionrunname | shipdate| shipqty"
+		cursor.execute("""SELECT productionrunid,productionrunname,shipdate,shipqty FROM public.productionruns ORDER BY productionrunid""")
+		rows = cursor.fetchall()
+		count = len(rows)
+                for line in rows:
+                    print line
+		print "Please select a new productionRunId or c to cancel"
+		newOrderRunId = sys.stdin.readline().strip()
+		try:
+		    newOrderRunId = int(newOrderRunId)
+		except:
+		    print "That is not a number"
+		    continue
+		if newOrderRunId == "c":
+		    continue
+		else:
+			cursor.execute("""SELECT productionrunid FROM public.productionruns WHERE productionrunid=%s""",(newOrderRunId,))
+			rows = cursor.fetchall()
+			count = len(rows)
+			if count==0:
+		    	    print "That run id does not exist."
+			else:
+		    	    orderRunId = newOrderRunId
+		    	    print "The run id is now set to: ",orderRunId
+		            continue
+	    if serialNumber == "co": #count runid
+                cursor.execute("""SELECT serial,testresults,productionrunid FROM public.testdata WHERE testresults='Passed' AND productionrunid=%s GROUP BY serial,testresults,productionrunid""", (orderRunId,))
+                rows = cursor.fetchall()
+		count = len(rows)
+		print(count)
 		continue
-
 	    if serialNumber=="exit":
 		print "Exiting"
 		sys.exit()
@@ -632,8 +684,6 @@ while(testing):
 
         if iserial != 0:
 	    #Consistent iserial check: verify iserial matches first historical iserial number for the referenced serial number
-	    testStorage = psycopg2.connect(postgresInfo)
-	    cursor = testStorage.cursor()
 	    cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
 	    rows = cursor.fetchall()
 	    if(len(rows)):
@@ -697,8 +747,6 @@ while(testing):
                 continue
 
         #Duplicate serial check: verify iserial matches first historical iserial number for the referenced serial number
-        testStorage = psycopg2.connect(postgresInfo)
-        cursor = testStorage.cursor()
         cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
         rows = cursor.fetchall()
         if(len(rows)):
@@ -1032,10 +1080,10 @@ while(testing):
         
     elif state == "finished":
         print "Writing results to database..."
-        testStorage = psycopg2.connect(postgresInfo)
-        cursor = testStorage.cursor()
         #cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch, iserial, testjig) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch, iserial, testjig ))
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch, iserial, testjig, productionRunId) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch, iserial, testjig, orderRunId ))
+	count = get_count_for_runid(orderRunId)
+	cursor.execute("""UPDATE productionruns SET endqty=%s WHERE productionrunid=%s""",(count ,orderRunId))
         testStorage.commit()
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
