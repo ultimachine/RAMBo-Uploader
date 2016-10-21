@@ -432,6 +432,20 @@ def programBootloaders():
         #if bootloader is successful
         return 0
 
+def printHelp():
+		print "List of commands: \n"
+		print "help: show this list \n"
+		print "p: power on (set powerPin and relay BedMotorsPin high) \n" 
+		print "o: power off (set powerPin and relayBedMotorsPin low)\n"
+		print "r: set rambo config \n"
+		print "m: set minirambo config \n"
+		print "h: return test jig to start position \n"
+		print "b: toggle bootloader \n"
+		print "c: clamp test jig \n"
+		print "s: supply test \n"
+		print "a: current test \n"
+		print "id: print internal serial id \n"
+
 orderRunId = set_run_id(testjig)
 
 while(testing):
@@ -481,6 +495,9 @@ while(testing):
                 rows = cursor.fetchall()
 		count = len(rows)
 		print(count)
+		continue
+	    if serialNumber=="help":
+		printHelp()
 		continue
 	    if serialNumber=="exit":
 		print "Exiting"
