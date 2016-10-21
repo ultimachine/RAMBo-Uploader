@@ -434,8 +434,8 @@ def programBootloaders():
 
 orderRunId = set_run_id(testjig)
 
-controller.setMotorCurrent(255)
 while(testing):
+    controller.setMotorCurrent(255)
     if state == "start":
 	failCode = None
 	failNote = None
