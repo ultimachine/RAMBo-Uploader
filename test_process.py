@@ -1090,10 +1090,10 @@ while(testing):
                 print "Invalid Entry."
                 call(["beep","-f 2250"])
 
-	if failCode == "0":
+        if failCode == 0:
             print "Enter note for fail: "
             failNote = raw_input()
-	state = "finished"
+        state = "finished"
         
     elif state == "finished":
         print "Writing results to database..."
