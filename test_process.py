@@ -248,7 +248,7 @@ if len(sys.argv) >= 3:
 if testjig == "minirambo":
     thresholdCurrent = 0.015
 if testjig == "rambo":
-    thresholdCurrent = 0.02
+    thresholdCurrent = 0.023
 
 #Setup shutdown handlers
 def signal_handler(signal, frame):
