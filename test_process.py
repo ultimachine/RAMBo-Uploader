@@ -113,6 +113,11 @@ for item in controllerPorts:
 if len(sys.argv) >= 2:
     targetPort = "/dev/ttyACM" + sys.argv[1]
     print "targetPort: " + targetPort
+# USB Firmware
+if len(sys.argv) >= 4:
+    usbfw = sys.argv[3]
+else:
+    usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
 
 def set_run_id(testjig):
     cursor.execute("""SELECT serial, timestamp,productionrunid,testjig FROM public.testdata WHERE testjig=%s ORDER BY timestamp DESC LIMIT 1""", (testjig,))
@@ -359,12 +364,13 @@ def getInternalSerialNumber():
         for line in iserialproc.communicate()[0].splitlines():
             if line.split('=')[0] == "ID_SERIAL_SHORT": iserial = line.split('=')[1]
         if iserial == 0:
-            beep()
-            print colored("USB Serial port does not exist or is not connected.","yellow")
+            print colored("USB internal serial number not found.","yellow")
         return iserial
 
 def programBootloaders():
-        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
+        #usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
+        #usbfw = '/home/ultimachine/Prusa-usbserial.hex'
+        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + usbfw + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
         bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
         bootloader32u2 = subprocess.Popen( shlex.split( bootcmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
@@ -437,6 +443,7 @@ orderRunId = set_run_id(testjig)
 controller.setMotorCurrent(255)
 while(testing):
     if state == "start":
+        print 'usbfw: ' + colored(usbfw,'yellow')
 	failCode = None
 	failNote = None
         currentReadings = []
@@ -678,7 +685,7 @@ while(testing):
             state = "powering"
 
         iserial = getInternalSerialNumber()
-        if not btldrState and iserial == 0:
+        if not btldrState and iserial == 0  and len(sys.argv) >= 4:
             state = "start"
             continue
 
@@ -735,10 +742,15 @@ while(testing):
 
     elif state == "iserialcheck":
         state = "program for test"
-        time.sleep(0.8)
+        time.sleep(1) #0.8
 
         #get iserial
         iserial = getInternalSerialNumber()
+
+        #custom usbfw has no iserial
+        if iserial == 0 and len(sys.argv) >= 4:
+                iserial = None
+                continue
 
         #fail if no iserial
         if iserial == 0:
