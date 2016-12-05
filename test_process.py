@@ -251,7 +251,7 @@ if len(sys.argv) >= 3:
         set_minirambo_configs()
 
 if testjig == "minirambo":
-    thresholdCurrent = 0.015
+    thresholdCurrent = 0.017
 if testjig == "rambo":
     thresholdCurrent = 0.02
 
