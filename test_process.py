@@ -165,7 +165,7 @@ def set_minirambo_configs():
     triggerPin = 4
     testFirmwarePath = "/home/ultimachine/workspace/MiniRamboTestJigFirmware/target_test_firmware.hex"
     vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Mini-Rambo-Marlin/Marlin.cpp.hex"
-    vrefPins = [8, 5, 4,] #x, y, z, e0, e1 on controller
+    vrefPins = [6, 5, 4,] #x, y, z, e0, e1 on controller
     mosfetOutPins = [3, 6, 8, 4] #On target
     mosfetInPins = [44, 45, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
     thermistorPins = [0, 1, 2]
