@@ -508,6 +508,10 @@ while(testing):
             if serialNumber == "r":
                  set_rambo_configs()
                  continue
+            if serialNumber == "cr":
+                 print "Restarting controller"
+                 controller.restart()
+                 continue
 
 	    if serialNumber== "ldr" or serialNumber== "b":
 		 if btldrState == True:
@@ -1107,5 +1111,6 @@ while(testing):
         powerOff()
         if testjig == "rambo":
             controller.home(homingRate, wait = True)
+        controller.restart()
         state = "start" 
 
