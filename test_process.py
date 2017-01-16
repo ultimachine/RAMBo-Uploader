@@ -780,6 +780,16 @@ while(testing):
 
         #time.sleep(2)
     elif state == "program for test":
+        #bootloader verification over USB
+        verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + directory + '/stk500boot_v2_mega2560.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
+        verify2560bootloader_process = subprocess.Popen( shlex.split( verify2560bootloader_cmd ) )
+        if verify2560bootloader_process.wait():
+                print colored("2560 Bootloader Verification FAILED!! ",'red')
+                state = "board fail"
+                continue
+        else:
+                print colored("2560 Bootloader Verification Success! ",'green')
+
         print "Programming target with test firmware..."
         if saveFirmware:
             print "Saving Firmware!!!"
