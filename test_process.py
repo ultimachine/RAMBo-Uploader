@@ -65,8 +65,8 @@ clampingRate = 7000 #4000
 # clamping length for : 1.1=18550, 1.2=16000
 #clampingLength = 18550
 #clampingLength = 16300
-clampingLength = 15980 #16200
-monitorFrequency = 2000 #1000
+clampingLength = 16000 #16200
+monitorFrequency = 1000
 stepperTestRPS = 5 #3 #rotations per second for the stepper test
 #controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64033353730351918201-if00"
 controllerPorts  = ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74035323434351A00261-if00"] #10006390 Rambo Controller
