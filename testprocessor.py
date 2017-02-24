@@ -155,6 +155,8 @@ class TestProcessor():
             passed &= self.testVrefs()
 
         if self.thermistors:
+            print "thermistor names"
+            print self.thermistorNames
             print "Target thermistor readings..."
             print self.thermistors
             passed &= self.testThermistors()

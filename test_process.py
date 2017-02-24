@@ -25,11 +25,11 @@ import shlex
 import termios
 import datetime
 import finishedGoods
+from Board import *
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
-version = subprocess.check_output(['git', '--git-dir='+directory+'/.git',
-                                   'rev-parse', 'HEAD'])
+version = subprocess.check_output(['git', '--git-dir='+directory+'/.git', 'rev-parse', 'HEAD'])
 version = version.strip()
 print "Git version - " + str(version)
 
@@ -58,150 +58,56 @@ except:
 
 #Configuration
 monitorPin = 44 #PL5 on test controller
-triggerPin = 3 #bed on target board
 powerPin = 3 #bed on test controller
 homingRate = 8000 #5000
 clampingRate = 7000 #4000
-# clamping length for : 1.1=18550, 1.2=16000
-#clampingLength = 18550
-#clampingLength = 16300
-clampingLength = 16000 #16200
+clampingLength = 15980 #16200
 monitorFrequency = 1000
 stepperTestRPS = 5 #3 #rotations per second for the stepper test
-#controllerPort = "/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_64033353730351918201-if00"
-controllerPorts  = ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74035323434351A00261-if00"] #10006390 Rambo Controller
-controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74034313938351C0A291-if00"] #10024352 Rambo Controller
-controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55539333937351615271-if00"] #10059679 Mini-Rambo Controller
-controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5553933393735151A2A1-if00"] #10059735 Backup Controller
 controllerPort = None
-targetPort = "/dev/ttyACM1"
-testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
-vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
 testing = True
 state = "start"
 serialNumber = ""
-vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
 supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
-mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
-mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
 endstopOutPins = [83, 82, 81, 80, 79, 78]
 endstopInPins = [12, 11, 10, 24, 23, 30]
-thermistorPins = [0, 1, 2, 7]
 logFile = '/home/ultimachine/tplog.txt'
-testjig = "rambo" #used to tell state machine if it needs to clamp or not
-
 relayBedMotorsPin = 4
 relayBedPin = 4
 relayLogicPin = 5
 relayMotorsPin = 2
+overCurrentChecking = True
+currentReadings = []
+saveFirmware = False
+btldrState = True
+
+testStorage = psycopg2.connect(postgresInfo)
+cursor = testStorage.cursor()
 
 waveOperator = None
 qcPerson = None
 testPerson = None
 
-overCurrentChecking = True
-currentReadings = []
-saveFirmware = False
+targetPort = "/dev/ttyACM" + sys.argv[1]
+print "targetPort: " + targetPort
+if sys.argv[2] == "rambo":
+  board = Rambo()
+if sys.argv[2] == "minirambo":
+  board = MiniRambo()
 
-btldrState = True
-testStorage = psycopg2.connect(postgresInfo)
-cursor = testStorage.cursor()
-
+controllerPorts  = ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74035323434351A00261-if00"] #10006390 Rambo Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74034313938351C0A291-if00"] #10024352 Rambo Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55539333937351615271-if00"] #10059679 Mini-Rambo Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5553933393735151A2A1-if00"] #10059735 Backup Controller
 for item in controllerPorts:
     if os.path.exists(item): controllerPort = item
 
-#set target COM port from first command line argument
-if len(sys.argv) >= 2:
-    targetPort = "/dev/ttyACM" + sys.argv[1]
-    print "targetPort: " + targetPort
 # USB Firmware
 if len(sys.argv) >= 4:
     usbfw = sys.argv[3]
 else:
     usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
 
-def set_run_id(testjig):
-    cursor.execute("""SELECT serial, timestamp,productionrunid,testjig FROM public.testdata WHERE testjig=%s ORDER BY timestamp DESC LIMIT 1""", (testjig,))
-    rows = cursor.fetchall()
-    if len(rows) == 0 or rows[0][2] == None:
-	if testjig == "rambo":
-	    orderRunId = 1
-        if testjig == "minirambo":
-	    orderRunId = 2
-    else:
-	orderRunId = rows[0][2]
-	cursor.execute("""SELECT * FROM productionruns WHERE productionRunId=%s""",(orderRunId,))
-	rows2 = cursor.fetchall()
-	if len(rows2) == 0:
-	    if testjig == "rambo":
-	        orderRunId = 1
-            if testjig == "minirambo":
-	        orderRunId = 2
-	else:
-	    orderRunId = rows[0][2]
-    return orderRunId
-
-def print_run_id_info(runID,testjig):
-    cursor.execute("""SELECT productionrunid, productid, productionrunname, shipdate, shipqty,endqty FROM public.productionruns WHERE productionrunid=%s""",(runID,))
-    rows = cursor.fetchall()
-    print "Current run id: ",rows[0][0]," for ",testjig,".  Current order for: ",rows[0][2],". Shipping date: ",rows[0][3],". Order quantity: ",rows[0][4],". Current count: ",rows[0][5]
-
-def get_count_for_runid(runID):
-    cursor.execute("""SELECT serial,testresults,productionrunid FROM public.testdata WHERE testresults='Passed' AND productionrunid=%s GROUP BY serial,testresults,productionrunid """, (runID,))
-    rowsCount = cursor.fetchall()
-    count = len(rowsCount)
-    return count
-
-def set_minirambo_configs():
-    global triggerPin
-    global testFirmwarePath
-    global vendorFirmwarePath
-    global vrefPins
-    global mosfetOutPins
-    global mosfetInPins
-    global thermistorPins
-    global testjig
-    global testProcessor
-    triggerPin = 4
-    testFirmwarePath = "/home/ultimachine/workspace/MiniRamboTestJigFirmware/target_test_firmware.hex"
-    vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Mini-Rambo-Marlin/Marlin.cpp.hex"
-    vrefPins = [6, 5, 4,] #x, y, z, e0, e1 on controller
-    mosfetOutPins = [3, 6, 8, 4] #On target
-    mosfetInPins = [44, 45, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
-    thermistorPins = [0, 1, 2]
-    testjig = "minirambo"
-
-    testProcessor = miniRamboTestProcessor
-
-    #update variables to the Atmega class instances
-    testFirmware.bootloader = testFirmwarePath
-    vendorFirmware.bootloader = vendorFirmwarePath
-    print "Testjig is now : " + testjig
-
-def set_rambo_configs():
-    global triggerPin
-    global testFirmwarePath
-    global vendorFirmwarePath
-    global vrefPins
-    global mosfetOutPins
-    global mosfetInPins
-    global thermistorPins
-    global testjig
-    global testProcessor
-    triggerPin = 3 
-    testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
-    vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
-    vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
-    mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
-    mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
-    thermistorPins = [0, 1, 2, 7]
-    testjig = "rambo"
-
-    testProcessor = ramboTestProcessor
-
-    testFirmware.bootloader = testFirmwarePath
-    vendorFirmware.bootloader = vendorFirmwarePath
-    print "Testjig is now : " + testjig
 
 #Setup test interfaces
 controller = TestInterface()
@@ -209,21 +115,6 @@ target = TestInterface()
 if not controller.open(port = controllerPort):
     print "Check controller connection."
     sys.exit(0)
-    
-#Setup target test firmware object to pass to AVRDUDE.
-testFirmware = Atmega()
-testFirmware.name = "atmega2560"
-testFirmware.bootloader = testFirmwarePath
-
-MRtestFirmware = Atmega()
-MRtestFirmware.name = "atmega2560"
-MRtestFirmware.bootloader = "/home/ultimachine/workspace/MiniRamboTestJigFirmware/target_test_firmware.hex"
-
-
-#Setup target vendor firmware object to pass to AVRDUDE. 
-vendorFirmware = Atmega()
-vendorFirmware.name = "atmega2560"
-vendorFirmware.bootloader = vendorFirmwarePath
 
 #Setup up avrdude config for upload to an Arduino.
 avrdude = Avrdude()
@@ -233,28 +124,9 @@ avrdude.port = targetPort
 avrdude.baudrate = "115200"
 avrdude.autoEraseFlash = True
 
-#Define our test processor
-miniRamboTestProcessor = TestProcessor()
-miniRamboTestProcessor.axisNames = ["X","Y","Z","E0"] #no E1
-miniRamboTestProcessor.vrefNames = ["X,Y","Z","E0"]
-miniRamboTestProcessor.thermistorNames = ["T0","T1","T2"] #no T3
-miniRamboTestProcessor.mosfetNames = ["Bed","Fan1","Fan0","Heat0"]
-miniRamboTestProcessor.thermistorLow = 925
-miniRamboTestProcessor.thermistorHigh = 955
-ramboTestProcessor = TestProcessor()
-testProcessor = ramboTestProcessor
+testProcessor = board.testProcessor
 
-#Check for command line parameter override of test jig
-if len(sys.argv) >= 3:
-    if sys.argv[2] == "rambo":
-        set_rambo_configs()
-    if sys.argv[2] == "minirambo":
-        set_minirambo_configs()
-
-if testjig == "minirambo":
-    thresholdCurrent = 0.017
-if testjig == "rambo":
-    thresholdCurrent = 0.023
+thresholdCurrent = board.thresholdCurrent
 
 #Setup shutdown handlers
 def signal_handler(signal, frame):
@@ -316,8 +188,7 @@ def smpsOn():
 def smpsOff():
                  controller.pinHigh(9)
 
-def isOverCurrent(threshold = thresholdCurrent):
-                 global testProcessor
+def isOverCurrent(threshold):
                  adcReadings = []
 
                  time.sleep(0.1)
@@ -341,13 +212,13 @@ def isOverCurrent(threshold = thresholdCurrent):
 
 def isOverCurrentBedMotors():
                   controller.pinHigh(relayBedMotorsPin)
-                  return isOverCurrent(threshold = 0.0)
+                  return isOverCurrent(0.0)
 
 
 def isOverCurrentLogic():
                   controller.pinLow(relayBedMotorsPin)
                   controller.pinHigh(relayLogicPin)
-                  return isOverCurrent()
+                  return isOverCurrent(board.thresholdCurrent)
 
 def targetMotorsDisable():
                  ramboMotorEnablePins = [29,28,27,26,25]
@@ -356,17 +227,6 @@ def targetMotorsDisable():
 
 def beep():
                     call(["beep","-f 2250"])
-
-def getInternalSerialNumber():
-        iserial = 0
-        #/sbin/udevadm info --query=property --name=/dev/ttyACM1 | awk -F'=' '/SHORT/ {print $2}
-        #for line in subprocess.check_output(shlex.split("/sbin/udevadm info --query=property --name=/dev/ttyACM1")).splitlines():
-        iserialproc = subprocess.Popen(shlex.split("/sbin/udevadm info --query=property --name=" + targetPort),stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        for line in iserialproc.communicate()[0].splitlines():
-            if line.split('=')[0] == "ID_SERIAL_SHORT": iserial = line.split('=')[1]
-        if iserial == 0:
-            print colored("USB internal serial number not found.","yellow")
-        return iserial
 
 def programBootloaders():
         #usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
@@ -453,7 +313,33 @@ def printHelp():
 		print "a: current test \n"
 		print "id: print internal serial id \n"
 
-orderRunId = set_run_id(testjig)
+def set_run_id():
+    cursor.execute("""SELECT serial, timestamp,productionrunid,testjig FROM public.testdata WHERE testjig=%s ORDER BY timestamp DESC LIMIT 1""", (board.testjig,))
+    rows = cursor.fetchall()
+    if len(rows) == 0 or rows[0][2] == None:
+	orderRunId = board.id
+    else:
+	orderRunId = rows[0][2]
+	cursor.execute("""SELECT * FROM productionruns WHERE productionRunId=%s""",(orderRunId,))
+	rows2 = cursor.fetchall()
+	if len(rows2) == 0:
+	    orderRunId = board.id
+	else:
+	    orderRunId = rows[0][2]
+    return orderRunId
+
+def print_run_id_info(runID,testjig):
+    cursor.execute("""SELECT productionrunid, productid, productionrunname, shipdate, shipqty,endqty FROM public.productionruns WHERE productionrunid=%s""",(runID,))
+    rows = cursor.fetchall()
+    print "Current run id: ",rows[0][0]," for ", board.testjig,".  Current order for: ",rows[0][2],". Shipping date: ",rows[0][3],". Order quantity: ",rows[0][4],". Current count: ",rows[0][5]
+
+def get_count_for_runid(runID):
+    cursor.execute("""SELECT serial,testresults,productionrunid FROM public.testdata WHERE testresults='Passed' AND productionrunid=%s GROUP BY serial,testresults,productionrunid """, (runID,))
+    rowsCount = cursor.fetchall()
+    count = len(rowsCount)
+    return count
+
+orderRunId = set_run_id()
 
 while(testing):
     controller.setMotorCurrent(255)
@@ -468,8 +354,8 @@ while(testing):
             iserial = None
             if gitdiff == 1:
                  print colored("Warning: Not a CLEAN program. Alert your nearest administrator immediately!",'red')
-	    finishedGoods.main(datetime.date.today(),cursor,testStorage,testjig=testjig)
-	    print_run_id_info(orderRunId,testjig)
+	    finishedGoods.main(datetime.date.today(),cursor,testStorage,testjig=board.testjig)
+	    print_run_id_info(orderRunId, board.testjig)
             print colored("Enter serial number : ","cyan")
             serialNumber = sys.stdin.readline().strip() #raw_input().strip()
 	    if serialNumber == "sr": #select runid
@@ -511,10 +397,10 @@ while(testing):
 		print "Exiting"
 		sys.exit()
             if serialNumber == "m":
-                 set_minirambo_configs()
+                 board = MiniRambo()
                  continue
             if serialNumber == "r":
-                 set_rambo_configs()
+                 board = Rambo()
                  continue
             if serialNumber == "cr":
                  print "Restarting controller"
@@ -591,9 +477,9 @@ while(testing):
                  continue
             if serialNumber == "j":
                  powerOn()
-                 isOverCurrent()
+                 isOverCurrent(board.thresholdCurrent)
                  time.sleep(0.5)
-                 isOverCurrent()
+                 isOverCurrent(board.thresholdCurrent)
                  powerOff()
                  continue
             if serialNumber == "ocon":
@@ -630,9 +516,9 @@ while(testing):
                  for enablePin in ramboMotorEnablePins:
                       target.pinHigh(enablePin)
                  time.sleep(0.5)
-                 isOverCurrent()
+                 isOverCurrent(board.thresholdCurrent)
                  time.sleep(3)
-                 isOverCurrent()
+                 isOverCurrent(board.thresholdCurrent)
                  powerOff()
                  continue
             if serialNumber == "qc":
@@ -672,7 +558,7 @@ while(testing):
 
             if serialNumber == "fw":
                  print "Uploading Test Firmware!!!!!!!"
-                 avrdude.upload(testFirmware, timeout = 10)
+                 avrdude.upload(board.testFirmware, timeout = 10)
                  continue
             if serialNumber == "savefw":
                  print "Enabling Save FW"
@@ -690,8 +576,8 @@ while(testing):
                 print "Error!  That was not a valid entry. Try again... (Use 55500000-55555555 for Testing)"
                 call(["beep","-f 2250"])
 
-        print "Testjig is now: " + testjig
-        print "VendorFirmware:" + vendorFirmwarePath
+        print "Testjig is now: " + board.testjig
+        print "VendorFirmware:" + board.vendorFirmwarePath
 
 	#call(["cat", "~/tplog.txt | grep " + serialNumber])
 	call(["./tpgrep.sh",serialNumber])
@@ -701,12 +587,9 @@ while(testing):
         print "Press button to begin test"
         controller.waitForStart() #Blocks until button pressed
 
-        if testjig == "rambo":
-            state = "clamping"
-        if testjig == "minirambo":
-            state = "powering"
+        state = board.setState()
 
-        iserial = getInternalSerialNumber()
+        iserial = board.setISerial(targetPort)
         if not btldrState and iserial == 0  and len(sys.argv) >= 4:
             state = "start"
             continue
@@ -767,7 +650,7 @@ while(testing):
         time.sleep(1) #0.8
 
         #get iserial
-        iserial = getInternalSerialNumber()
+        iserial = board.setISerial(targetPort)
 
         #custom usbfw has no iserial
         if iserial == 0 and len(sys.argv) >= 4:
@@ -810,7 +693,7 @@ while(testing):
             savefwcmd = "avrdude -V -pm2560 -cwiring -Uflash:r:"+savefilename+".hex:i -Ueeprom:r:"+savefilename+".eeprom:i -P"+targetPort
             savefwproc = subprocess.Popen(shlex.split(savefwcmd)).wait()
 
-        if avrdude.upload(testFirmware, timeout = 10):
+        if avrdude.upload(board.testFirmware, timeout = 10):
             state = "connecting target"
         else:
             print "Upload failed."
@@ -836,29 +719,36 @@ while(testing):
     elif state == "powering":   
         print "Powering Board..."
         state = "supply test"
-        if testjig == "rambo":
+
+        #smpsOff over idle current test
+        #is over current for smps off with power on (smpsOffovercurrent)
+        if board.testjig == "rambo":
             powerOn()
             time.sleep(0.1)
-            if isOverCurrent(threshold = 0.0): 
+            if isOverCurrent(0.0):
                 state = "board fail"
-            smpsOn()
+                #continue ??
+            smpsOn() #get rdy for next smpsOn test
+
+        #smpsOn over idle current test
+        #is over idle current for mini and rambo
         if state != "board fail":
             powerOn()
-            if isOverCurrent(): 
+            if isOverCurrent(board.thresholdCurrent):
                 state = "board fail"
         if state == "board fail":
             print "Powering failed."
 
     elif state == "dryrunfullstep":
         state = "fullstep"
-        if testjig == "disablerambodryrun":
+        if board.testjig == "disablerambodryrun":
           for drycount in range(40):
             print "DRYRUN " + str(drycount) + " Testing full step forward..."
             target.setMicroStepping(1)
-            target.runSteppers(frequency = 200*stepperTestRPS, steps = 200,direction = target.UP, triggerPin = triggerPin, wait = False)
+            target.runSteppers(frequency = 200*stepperTestRPS, steps = 200,direction = target.UP, triggerPin = board.triggerPin, wait = False)
             controller.monitorSteppers(pin = monitorPin,frequency = monitorFrequency)
             print "DRYRUN " + str(drycount) + " Testing full step reverse..."
-            target.runSteppers(frequency = 200*stepperTestRPS, steps = 200,direction = target.DOWN, triggerPin = triggerPin, wait = False)
+            target.runSteppers(frequency = 200*stepperTestRPS, steps = 200,direction = target.DOWN, triggerPin = board.triggerPin, wait = False)
             controller.monitorSteppers(pin = monitorPin,frequency = monitorFrequency)
             finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
             if -1 in testProcessor.fullStep or not finished:
@@ -872,12 +762,12 @@ while(testing):
         print "Testing full step forward..."
         target.setMicroStepping(1)
         target.runSteppers(frequency = 200*stepperTestRPS, steps = 200, 
-                           direction = target.UP, triggerPin = triggerPin, wait = False)
+                           direction = target.UP, triggerPin = board.triggerPin, wait = False)
         testProcessor.fullStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
         print "Testing full step reverse..."
         target.runSteppers(frequency = 200*stepperTestRPS, steps = 200, 
-                           direction = target.DOWN, triggerPin = triggerPin, wait = False)
+                           direction = target.DOWN, triggerPin = board.triggerPin, wait = False)
         testProcessor.fullStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
         finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
@@ -891,12 +781,12 @@ while(testing):
         print "Testing half step forward..."
         target.setMicroStepping(2)
         target.runSteppers(frequency = 400*stepperTestRPS, steps = 400, 
-                           direction = target.UP, triggerPin = triggerPin, wait = False)
+                           direction = target.UP, triggerPin = board.triggerPin, wait = False)
         testProcessor.halfStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
         print "Testing half step reverse..."
         target.runSteppers(frequency = 400*stepperTestRPS, steps = 400, 
-                           direction = target.DOWN, triggerPin = triggerPin, wait = False)
+                           direction = target.DOWN, triggerPin = board.triggerPin, wait = False)
         testProcessor.halfStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
         finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
@@ -910,12 +800,12 @@ while(testing):
         print "Testing quarter step forward..."
         target.setMicroStepping(4)
         target.runSteppers(frequency = 800*stepperTestRPS, steps = 800, 
-                           direction = target.UP, triggerPin = triggerPin, wait = False)
+                           direction = target.UP, triggerPin = board.triggerPin, wait = False)
         testProcessor.quarterStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
         print "Testing quarter step reverse..."
         target.runSteppers(frequency = 800*stepperTestRPS, steps = 800, 
-                           direction = target.DOWN, triggerPin = triggerPin, wait = False)
+                           direction = target.DOWN, triggerPin = board.triggerPin, wait = False)
         testProcessor.quarterStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
         finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
@@ -929,12 +819,12 @@ while(testing):
         print "Testing sixteeth step forward..."
         target.setMicroStepping(16)
         target.runSteppers(frequency = 3200*stepperTestRPS, steps = 3200, 
-                           direction = target.UP, triggerPin = triggerPin, wait = False)
+                           direction = target.UP, triggerPin = board.triggerPin, wait = False)
         testProcessor.sixteenthStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
         print "Testing sixteeth step reverse..."
         target.runSteppers(frequency = 3200*stepperTestRPS, steps = 3200, 
-                           direction = target.DOWN, triggerPin = triggerPin, wait = False)
+                           direction = target.DOWN, triggerPin = board.triggerPin, wait = False)
         testProcessor.sixteenthStep += controller.monitorSteppers(pin = monitorPin, 
                                                    frequency = monitorFrequency)
         finished = target.waitForFinish(commands = 2, timeout = 2, clear = True)
@@ -946,7 +836,7 @@ while(testing):
 
     elif state == "vrefs":
         print "Testing stepper driver references..."
-        for pin in vrefPins:
+        for pin in board.vrefPins:
             testProcessor.vrefs += controller.analogRead(pin)
         if -1 in testProcessor.vrefs:
             print "Reading references failed."
@@ -971,9 +861,9 @@ while(testing):
     elif state == "mosfet high":
         passed = True
         print "Testing MOSFETs high..."
-        for pin in mosfetOutPins:
+        for pin in board.mosfetOutPins:
             passed &= target.pinHigh(pin)
-        for pin in mosfetInPins:
+        for pin in board.mosfetInPins:
             testProcessor.mosfetHigh += controller.pullupReadPin(pin)
         if -1 in testProcessor.mosfetHigh or not passed:
             print "Reading mosfets failed."
@@ -984,9 +874,9 @@ while(testing):
     elif state == "mosfet low":
         passed = True
         print "Testing MOSFETs low..."
-        for pin in mosfetOutPins:
+        for pin in board.mosfetOutPins:
             passed &= target.pinLow(pin)
-        for pin in mosfetInPins:
+        for pin in board.mosfetInPins:
             testProcessor.mosfetLow += controller.pullupReadPin(pin)
         if -1 in testProcessor.mosfetLow or not passed:
             print "Reading mosfets failed."
@@ -1022,20 +912,17 @@ while(testing):
 
     elif state == "thermistors":
         print "Testing thermistor values..."
-        for pin in thermistorPins:
+        for pin in board.thermistorPins:
             testProcessor.thermistors += target.analogRead(pin)
         if -1 in testProcessor.thermistors:
             print "Reading thermistors failed."
             state = "board fail"
         else:
             state = "program marlin"
-            if testjig=="rambo":
-                if isOverCurrent(threshold=1.4): state = "board fail"
-            if testjig=="minirambo":
-                if isOverCurrent(threshold=1.05): state = "board fail"
+            if isOverCurrent(board.motorEnabledThresholdCurrent): state = "board fail"
             targetMotorsDisable()
             time.sleep(1.5)
-            if isOverCurrent(): state = "board fail"
+            if isOverCurrent(board.thresholdCurrent): state = "board fail"
 
     elif state == "program marlin":
         #flush any accidently preloaded inputs
@@ -1046,7 +933,7 @@ while(testing):
         print "Disconnecting target from test server..."
         target.close()
         print "Programming target with vendor firmware..."
-        if avrdude.upload(vendorFirmware, timeout = 20):
+        if avrdude.upload(board.vendorFirmware, timeout = 20):
             state = "testamps"
             #state = "processing"
         else:
@@ -1055,10 +942,10 @@ while(testing):
 
     elif state == "testamps":
         state = "processing"
-        if isOverCurrent(): state = "board fail"
-        if state =="processing" and testjig =="rambo":
+        if isOverCurrent(board.thresholdCurrent): state = "board fail"
+        if state =="processing" and board.testjig =="rambo":
             smpsOff()
-            if isOverCurrent(): state = "board fail"
+            if isOverCurrent(board.thresholdCurrent): state = "board fail"
 
     elif state == "processing":
         if testProcessor.verifyAllTests():
@@ -1125,14 +1012,14 @@ while(testing):
     elif state == "finished":
         print "Writing results to database..."
         #cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch, iserial, testjig, productionRunId) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch, iserial, testjig, orderRunId ))
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch, iserial, testjig, productionRunId) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch, iserial, board.testjig, orderRunId ))
 	count = get_count_for_runid(orderRunId)
 	cursor.execute("""UPDATE productionruns SET endqty=%s WHERE productionrunid=%s""",(count ,orderRunId))
         testStorage.commit()
         testProcessor.restart()
         print "Preparing Test Jig for next board..."
         powerOff()
-        if testjig == "rambo":
+        if board.testjig == "rambo":
             controller.home(homingRate, wait = True)
         controller.restart()
         state = "start" 
