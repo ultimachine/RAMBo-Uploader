@@ -12,7 +12,7 @@ class Avrdude():
         self.programmerSN = ""
         self.port = ""
         self.baudrate = ""
-        self.configFile = ""
+        self.configFile = "/etc/avrdude.conf"
         self.autoEraseFlash = True
 
     def upload(self, target, timeout = 15):
