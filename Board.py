@@ -78,6 +78,8 @@ class Rambo(Board):
     self.vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
     self.mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
     self.mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+    self.endstopOutPins = [83, 82, 81, 80, 79, 78] #controller outputs
+    self.endstopInPins = [12, 11, 10, 24, 23, 30] #target inputs
     self.thermistorPins = [0, 1, 2, 7]
     self.setTestFirmware()
     self.setVendorFirmware()
@@ -93,7 +95,9 @@ class Rambo(Board):
   Method that sets the state to clamping for the Rambo testjig
   '''
   def setState(self):
-    return "clamping"
+    #return "clamping"
+    #skip clamping for bench test of rambo
+    return "powering"
 
 '''
   This class defines characteristics that are specific to the MiniRambo.  It inherits
@@ -136,5 +140,41 @@ class MiniRambo(Board):
   def setState(self):
     return "powering"
 
+class ArchimRambo(Board):
+  def __init__(self):
+    #controller pins on rambo
+    self.mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+    self.endstopOutPins = [83, 82, 81, 80, 79, 78] #controller outputs
+    self.vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
+
+    #target board pins (test points)
+    self.triggerPin = 9 #7
+    self.endstopInPins = [14, 29, 31, 32, 15, 30] #target inputs Xmin,Ymin,Zmin,Xmax,Ymax,Zmax
+    self.mosfetOutPins = [9, 4, 8, 7, 6, 5] #On target BED, FAN0, HEAT3, HEAT2, HEAT1, FAN1
+    self.testFirmwarePath = "archim_testfw.bin"
+    self.vendorFirmwarePath = "archim_marlin.bin"
+    self.thermistorPins = [10,9,11,8] #T0 T1 T2 T3
+    self.id = 3 #default run id for archim
+    self.testjig = "archim"
+    self.thresholdCurrent = 0.017
+    self.motorEnabledThresholdCurrent = 1.5
+    self.setTestProcessor()
+
+  def setTestProcessor(self):
+    self.testProcessor = TestProcessor()
+    self.testProcessor.supplyNames = ["3V rail","Bed rail", "5V rail"]
+    self.testProcessor.thermistorLow = 925
+    self.testProcessor.thermistorHigh = 955
+    self.testProcessor.rail_0_low = 3.22 #3.3 on MM reads 3.273 on test
+    self.testProcessor.rail_0_high = 3.35
+    self.testProcessor.railsLow = [3.22, 23, 4.7]
+    self.testProcessor.railsHigh = [3.35, 25.5, 5.2]
+    print "setting supply names: " + str(self.testProcessor.supplyNames)
+
+  def setState(self):
+    return "supply test"
+    #return "thermistors"
+    return "connecting target"
+    return "fullstep"
 
 

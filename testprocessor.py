@@ -27,6 +27,8 @@ class TestProcessor():
         self.endstopNames = ["X min", "Y min", "Z min", "X max", "Y max", "Z max"]
         self.thermistorLow = 956
         self.thermistorHigh = 985
+        self.railsLow = [23, 23, 4.7]
+        self.railsHigh = [25.5, 25.5, 5.2]
 
 
     def testVrefs(self):
@@ -48,17 +50,14 @@ class TestProcessor():
         if self._wasTimedOut(self.supplys):
             print "...Timed out at supply test"
             return False
-        for i in [0,1]:
-            if (11.4 <= self.supplyVoltages[i] <= 12.5) or (23 <= self.supplyVoltages[i] <= 25.5):
+
+        for i in [0,2]:
+            if (self.railsLow[i] <= self.supplyVoltages[i] <= self.railsHigh[i]):
                 pass
             else:
                 self.errors += "Test " + self.supplyNames[i] + " supply\n"
                 passed &= False
-        if 4.7 <= self.supplyVoltages[2] <= 5.2:
-            pass
-        else:
-            self.errors += "Test " + self.supplyNames[2] + " supply\n"
-            passed &= False
+
         return passed
 
     def testThermistors(self):
@@ -155,8 +154,8 @@ class TestProcessor():
             passed &= self.testVrefs()
 
         if self.thermistors:
-            print "thermistor names"
-            print self.thermistorNames
+            #print "thermistor names"
+            #print self.thermistorNames
             print "Target thermistor readings..."
             print self.thermistors
             passed &= self.testThermistors()

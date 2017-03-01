@@ -4,6 +4,7 @@ import os
 import sys
 import re
 from watchpuppy import *
+from termcolor import colored
 
 class TestInterface():
     """A class to abstract away serial handling and communication with 
@@ -105,6 +106,7 @@ class TestInterface():
         command = "C" + str(steps) + "F" + str(frequency) + direction
         if triggerPin > -1:
             command += "P" + str(triggerPin) + "_"
+        print colored(command,'magenta')
         self.serial.write(command)
         if wait:
             return self.waitForFinish(timeout = rate/1000, clear = True)

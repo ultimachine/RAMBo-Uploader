@@ -69,8 +69,6 @@ testing = True
 state = "start"
 serialNumber = ""
 supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
-endstopOutPins = [83, 82, 81, 80, 79, 78]
-endstopInPins = [12, 11, 10, 24, 23, 30]
 logFile = '/home/ultimachine/tplog.txt'
 relayBedMotorsPin = 4
 relayBedPin = 4
@@ -94,11 +92,14 @@ if sys.argv[2] == "rambo":
   board = Rambo()
 if sys.argv[2] == "minirambo":
   board = MiniRambo()
+if sys.argv[2] == "archim":
+  board = ArchimRambo()
 
 controllerPorts  = ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74035323434351A00261-if00"] #10006390 Rambo Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74034313938351C0A291-if00"] #10024352 Rambo Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55539333937351615271-if00"] #10059679 Mini-Rambo Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5553933393735151A2A1-if00"] #10059735 Backup Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55533343837351102242-if00"] #10059099 Bench/Archim Controller
 for item in controllerPorts:
     if os.path.exists(item): controllerPort = item
 
@@ -155,6 +156,7 @@ def showSupplys():
                  supplyVoltagesUnpowered = []
 
 		 time.sleep(0.1)
+                 print testProcessor.supplyNames
                  for pin in supplyPins:
                      supplyVoltagesUnpowered += analog2volt(controller.analogRead(pin))
                  print supplyVoltagesUnpowered
@@ -189,6 +191,8 @@ def smpsOff():
                  controller.pinHigh(9)
 
 def isOverCurrent(threshold):
+                 if not overCurrentChecking: 
+                     return False
                  adcReadings = []
 
                  time.sleep(0.1)
@@ -199,8 +203,6 @@ def isOverCurrent(threshold):
                  meanAmps = round(sum(adcReadings)/len(adcReadings) * (5.0/1024.0),4)
                  print colored("current_reading: " + str(meanAmps) + " Amps",'blue')
                  currentReadings.append(meanAmps)
-                 if not overCurrentChecking: 
-                     return False
 
                  if(meanAmps > threshold):
                      powerOff()
@@ -342,7 +344,7 @@ def get_count_for_runid(runID):
 orderRunId = set_run_id()
 
 while(testing):
-    controller.setMotorCurrent(255)
+    #controller.setMotorCurrent(255)
     if state == "start":
         print 'usbfw: ' + colored(usbfw,'yellow')
 	failCode = None
@@ -435,6 +437,7 @@ while(testing):
             if serialNumber == "s":
                  print "Supply Test!!!!!!!"
                  supplyVoltagesUnpowered = []
+                 print board.testProcessor.supplyNames
                  for pin in supplyPins:
                      supplyVoltagesUnpowered += analog2volt(controller.analogRead(pin))
                  print supplyVoltagesUnpowered
@@ -580,7 +583,7 @@ while(testing):
         print "VendorFirmware:" + board.vendorFirmwarePath
 
 	#call(["cat", "~/tplog.txt | grep " + serialNumber])
-	call(["./tpgrep.sh",serialNumber])
+	call([directory + "/tpgrep.sh",str(serialNumber)])
         with open(logFile, "a") as tpLog:
             tpLog.write(serialNumber + '\n') 
 
@@ -856,6 +859,8 @@ while(testing):
             state = "board fail"
         else:     
             state = "uploading"
+            if board.testjig == "archim":
+                state = "connecting target"
             #state = "program for test"
  
     elif state == "mosfet high":
@@ -887,9 +892,9 @@ while(testing):
     elif state == "endstop high":
         passed = True
         print "Testing endstops high..."
-        for pin in endstopOutPins:
+        for pin in board.endstopOutPins:
             passed &= controller.pinHigh(pin)
-        for pin in endstopInPins:
+        for pin in board.endstopInPins:
             testProcessor.endstopHigh += target.readPin(pin)
         if -1 in testProcessor.endstopHigh or not passed:
             print "Reading endstops failed."
@@ -900,9 +905,9 @@ while(testing):
     elif state == "endstop low":
         passed = True
         print "Testing endstops low..."
-        for pin in endstopOutPins:
+        for pin in board.endstopOutPins:
             passed &= controller.pinLow(pin)
-        for pin in endstopInPins:
+        for pin in board.endstopInPins:
             testProcessor.endstopLow += target.readPin(pin)
         if -1 in testProcessor.endstopLow or not passed:
             print "Reading endstops failed."
@@ -925,6 +930,9 @@ while(testing):
             if isOverCurrent(board.thresholdCurrent): state = "board fail"
 
     elif state == "program marlin":
+        if board.testjig == "archim":
+            state = "processing"
+            continue
         #flush any accidently preloaded inputs
         sys.stdin.flush()
         sys.stdout.flush()
