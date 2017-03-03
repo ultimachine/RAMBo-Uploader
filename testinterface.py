@@ -47,8 +47,10 @@ class TestInterface():
         return True
     
     def restart(self):
-         self.close()
-         self.open(port = self.serial.port)
+        self.serial.setDTR(0)
+        self.serial.setDTR(1)
+        self.serial.flushOutput()
+        self.serial.flushInput()
          
     def read(self):
         return self.serial.read(self.serial.inWaiting())
