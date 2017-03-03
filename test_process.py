@@ -178,8 +178,8 @@ def powerOn():
                  return controller.pinHigh(relayLogicPin)
 def powerOff():
                  controller.pinLow(powerPin)
-                 controller.pinLow(relayBedMotorsPin)
-                 controller.pinLow(relayLogicPin)
+                 #controller.pinLow(relayBedMotorsPin)
+                 #controller.pinLow(relayLogicPin)
 def smpsOn():
                  controller.pinLow(9)
                  time.sleep(0.1)
@@ -625,13 +625,20 @@ while(testing):
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     elif state == "clamping":
+        state = "powering"
         smpsOff()
+        print "Homing test jig..."
+        if not controller.home(rate = homingRate, wait = True):
+            testProcessor.errors += "Homing failed.\n"
+            print "Homing failed."
+            state = "board fail"
+            continue
         print "Clamping test jig..."
-        controller.home(rate = homingRate, wait = False)
-        controller.runSteppers(frequency = clampingRate, steps = clampingLength,
-                               direction = controller.UP, wait = False)
-        state = "wait for homing"
-#        state = "program for test"
+        if not controller.runSteppers(frequency = clampingRate, steps = clampingLength, direction = controller.UP, wait = True):
+            testProcessor.errors += "Clamping failed.\n"
+            print "Clamping failed."
+            state = "board fail"
+            continue
 
     elif state == "uploading":
         state = "iserialcheck"
@@ -966,8 +973,10 @@ while(testing):
         testProcessor.showErrors()
         
     elif state == "board fail":
-        powerOff()
         print "Unable to complete testing process!"
+        print "Restarting test controller..."
+        controller.restart()
+        powerOff()
         print colored(serialNumber + " Board failed",'red')
         with open(logFile, "a") as tpLog:
             tpLog.write(serialNumber + ' Failed\n')
@@ -975,8 +984,6 @@ while(testing):
         testProcessor.showErrors()
         powerOff()
         testProcessor.errors = "Failed:" + testProcessor.errors
-        print "Restarting test controller..."
-        controller.restart()
         if target.serial.isOpen():
             print "Closing target..."
             target.close()
