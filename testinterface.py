@@ -137,7 +137,7 @@ class TestInterface():
         if(self.debugmode): print colored(command,'magenta')
         self.serial.write(command)
         if wait:
-            return self.waitForFinish(timeout = rate/1000, clear = True)
+            return self.waitForFinish(timeout = frequency/1000, clear = True)
         else:
             return True
     
@@ -164,6 +164,7 @@ class TestInterface():
         return True
     
     def waitForStart(self):
+        self.serial.flushInput() #flush host input
         self.output = ""
         while "start" not in self.output:
             time.sleep(0.1)
