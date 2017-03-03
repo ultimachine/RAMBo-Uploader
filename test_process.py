@@ -342,8 +342,8 @@ def get_count_for_runid(runID):
 orderRunId = set_run_id()
 
 while(testing):
-    controller.setMotorCurrent(255)
     if state == "start":
+        controller.setMotorCurrent(255)
         print 'usbfw: ' + colored(usbfw,'yellow')
 	failCode = None
 	failNote = None
