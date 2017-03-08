@@ -1029,5 +1029,6 @@ while(testing):
         if board.testjig == "rambo":
             controller.home(homingRate, wait = True)
         controller.restart()
+        controller.setMotorCurrent(255)
         state = "start" 
 
