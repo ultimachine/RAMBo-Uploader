@@ -6,6 +6,10 @@ import re
 from watchpuppy import *
 from termcolor import colored
 
+def listports():
+	import glob
+	print(' '.join( glob.glob("/dev/ttyACM[0-9]") )) #effectively 'ls /dev/ttyACM*'
+
 class TestInterface():
     """A class to abstract away serial handling and communication with 
        board running the test firmware.""" 
@@ -16,10 +20,14 @@ class TestInterface():
         self.DOWN = "D"
         self.output = ""
         self._groupn = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)]
+        self.debugmode = True
          
     def open(self, port):
         if not os.path.exists(port):
             print "Serial port not detected!"
+            listports()
+            while(1):
+                time.sleep(1)
             return False
         self.serial.port = port
         self.serial.open()
@@ -48,8 +56,10 @@ class TestInterface():
         return True
     
     def restart(self):
-         self.close()
-         self.open(port = self.serial.port)
+        self.serial.setDTR(0)
+        self.serial.setDTR(1)
+        self.serial.flushOutput()
+        self.serial.flushInput()
          
     def read(self):
         return self.serial.read(self.serial.inWaiting())
@@ -59,7 +69,9 @@ class TestInterface():
         return self.waitForFinish(clear = True)
             
     def pinLow(self, pin):
-        self.serial.write("W"+str(pin)+"L_")
+        cmd = "W"+str(pin)+"L_"
+        if(self.debugmode): print colored(cmd,'magenta')
+        self.serial.write(cmd)
         return self.waitForFinish(clear = True)
                       
     def setMicroStepping(self, level):
@@ -106,7 +118,7 @@ class TestInterface():
         command = "C" + str(steps) + "F" + str(frequency) + direction
         if triggerPin > -1:
             command += "P" + str(triggerPin) + "_"
-        print colored(command,'magenta')
+        if(self.debugmode): print colored(command,'magenta')
         self.serial.write(command)
         if wait:
             return self.waitForFinish(timeout = rate/1000, clear = True)

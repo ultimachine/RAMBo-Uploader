@@ -111,8 +111,8 @@ else:
 
 
 #Setup test interfaces
-controller = TestInterface()
-target = TestInterface()
+controller = board.controller #TestInterface()
+target = board.target #TestInterface()
 if not controller.open(port = controllerPort):
     print "Check controller connection."
     sys.exit(0)
@@ -133,7 +133,7 @@ thresholdCurrent = board.thresholdCurrent
 def signal_handler(signal, frame):
     print "Shutting down test server..."
     powerOff()
-    controller.home(homingRate, wait = False)
+    #controller.home(homingRate, wait = False)
     controller.close()
     target.close()
     sys.exit(0)
@@ -180,8 +180,8 @@ def powerOn():
                  return controller.pinHigh(relayLogicPin)
 def powerOff():
                  controller.pinLow(powerPin)
-                 controller.pinLow(relayBedMotorsPin)
-                 controller.pinLow(relayLogicPin)
+                 #controller.pinLow(relayBedMotorsPin)
+                 #controller.pinLow(relayLogicPin)
 def smpsOn():
                  controller.pinLow(9)
                  time.sleep(0.1)
@@ -223,9 +223,10 @@ def isOverCurrentLogic():
                   return isOverCurrent(board.thresholdCurrent)
 
 def targetMotorsDisable():
-                 ramboMotorEnablePins = [29,28,27,26,25]
-                 for enablePin in ramboMotorEnablePins:
-                      target.pinHigh(enablePin)
+                 board.disableMotors()
+                 #ramboMotorEnablePins = [29,28,27,26,25]
+                 #for enablePin in ramboMotorEnablePins:
+                 #     target.pinHigh(enablePin)
 
 def beep():
                     call(["beep","-f 2250"])
@@ -395,6 +396,12 @@ while(testing):
 	    if serialNumber=="help":
 		printHelp()
 		continue
+	    if serialNumber=="nrst":
+		board.toggle_nrst()
+		continue
+	    if serialNumber=="samba":
+		board.samba_mode()
+		continue
 	    if serialNumber=="exit":
 		print "Exiting"
 		sys.exit()
@@ -494,6 +501,16 @@ while(testing):
             if serialNumber == "open":
                  target.open(port = targetPort)
                  continue
+            if serialNumber == "btmode":
+                 import serial
+                 s = serial.Serial(port="/dev/ttyACM1",baudrate=1200)
+                 try:
+                   s.open()
+                   s.close()
+                 except:
+                   print "SAMBA mode."
+                   s.close()
+                 continue
             if serialNumber == "close":
                  target.close()
                  continue
@@ -570,7 +587,7 @@ while(testing):
 
             try: 
                 sNum = int(serialNumber)
-                if(  (sNum in range(10000000,10099000))  or  (sNum in range(55500000,55555555)) ): 
+                if(  (sNum in range(10000000,10099000))  or  (sNum in range(55500000,55555555)) or  (sNum in range(20000000,20100000))): 
                     break
                 else:
                     print "Invalid Entry. (Use 55500000-55555555 for Testing)."
@@ -637,6 +654,9 @@ while(testing):
 #        state = "program for test"
 
     elif state == "uploading":
+        if board.testjig == "archim":
+            state = "program for test"
+            continue
         state = "iserialcheck"
         if btldrState==True:
             print "Uploading Bootloader and setting fuses..."
@@ -679,6 +699,9 @@ while(testing):
 
         #time.sleep(2)
     elif state == "program for test":
+        if board.testjig == "archim":
+            state = board.programTestFirmware()
+            continue
         #bootloader verification over USB
         verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + directory + '/stk500boot_v2_mega2560.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
         verify2560bootloader_process = subprocess.Popen( shlex.split( verify2560bootloader_cmd ) )
@@ -708,7 +731,7 @@ while(testing):
             state = "mosfet high"
 #            state = "wait for homing"
         else:
-            print "Connect failed."
+            print colored("Connect failed.",'red')
             state = "board fail"
 
     elif state == "wait for homing":
@@ -859,9 +882,6 @@ while(testing):
             state = "board fail"
         else:     
             state = "uploading"
-            if board.testjig == "archim":
-                state = "connecting target"
-            #state = "program for test"
  
     elif state == "mosfet high":
         passed = True
@@ -930,16 +950,18 @@ while(testing):
             if isOverCurrent(board.thresholdCurrent): state = "board fail"
 
     elif state == "program marlin":
-        if board.testjig == "archim":
-            state = "processing"
-            continue
         #flush any accidently preloaded inputs
         sys.stdin.flush()
         sys.stdout.flush()
         termios.tcflush(sys.stdin, termios.TCIOFLUSH)
 
         print "Disconnecting target from test server..."
-        target.close()
+        board.target.close()
+
+        if board.testjig == "archim":
+            state = board.programVendorFirmware()
+            continue
+
         print "Programming target with vendor firmware..."
         if avrdude.upload(board.vendorFirmware, timeout = 20):
             state = "testamps"
@@ -974,14 +996,14 @@ while(testing):
         testProcessor.showErrors()
         
     elif state == "board fail":
-        powerOff()
+        #powerOff()
         print "Unable to complete testing process!"
         print colored(serialNumber + " Board failed",'red')
         with open(logFile, "a") as tpLog:
             tpLog.write(serialNumber + ' Failed\n')
         testProcessor.verifyAllTests()
         testProcessor.showErrors()
-        powerOff()
+        #powerOff()
         testProcessor.errors = "Failed:" + testProcessor.errors
         print "Restarting test controller..."
         controller.restart()
@@ -1018,6 +1040,7 @@ while(testing):
         state = "finished"
         
     elif state == "finished":
+        powerOff()
         print "Writing results to database..."
         #cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
         cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch, iserial, testjig, productionRunId) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch, iserial, board.testjig, orderRunId ))
