@@ -15,6 +15,7 @@ class TestProcessor():
         self.endstopHigh = []
         self.endstopLow = []
         self.thermistors = []
+        self.spiflashid = []
         self.errors = ""
         self.failedAxes = [False,False,False,False,False]
         self.failedMosfets = [False,False,False,False,False,False]
@@ -30,6 +31,20 @@ class TestProcessor():
         self.railsLow = [23, 23, 4.7]
         self.railsHigh = [25.5, 25.5, 5.2]
 
+
+    def testSpiflashid(self):
+        passed = True
+        if self._wasTimedOut(self.supplys):
+            print "...Timed out at Archim SPI FLASH ID test"
+            return False
+
+        for i in self.spiflashid:
+            if (i == 20):
+                pass
+            else:
+                self.errors += "Check SpiFlash chip.\n"
+                passed &= False
+        return passed
 
     def testVrefs(self):
         passed = True
@@ -196,6 +211,11 @@ class TestProcessor():
             print "Sixteeth step results"
             passed &= self.testStepperResults(self.sixteenthStep)
 
+        if self.spiflashid:
+            print "Spiflashid value (20)"
+            print self.spiflashid
+            passed &= self.testSpiflashid()
+
         return passed
 
     def showErrors(self):
@@ -214,6 +234,7 @@ class TestProcessor():
         self.endstopHigh = []
         self.endstopLow = []
         self.thermistors = []
+        self.spiflashid = []
         self.errors = ""
         self.failedAxes = [False,False,False,False,False]
         self.failedMosfets = [False,False,False,False,False,False]
@@ -231,7 +252,8 @@ class TestProcessor():
                     mosfetLow=self.mosfetLow,
                     endstopHigh=self.endstopHigh,
                     endstopLow=self.endstopLow,
-                    thermistors=self.thermistors)
+                    thermistors=self.thermistors,
+                    spiflashid=self.spiflashid)
 
     def _wasTimedOut(self, vals):
         if -1 in vals:

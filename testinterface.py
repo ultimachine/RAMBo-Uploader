@@ -89,7 +89,15 @@ class TestInterface():
             return self._findValues()  
         else: 
             return [-1]
-    
+
+    def initSpiflash(self):
+        """Returns archim spiflash mfg id"""
+        self.serial.write("S_")
+        if self.waitForFinish():
+            return self._findValues()
+        else:
+            return [-1]
+
     def pullupReadPin(self, pin):
         """Returns list with pin state"""
         self.serial.write("Q"+str(pin)+"_")

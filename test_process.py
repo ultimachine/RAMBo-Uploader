@@ -396,6 +396,9 @@ while(testing):
 	    if serialNumber=="help":
 		printHelp()
 		continue
+	    if serialNumber=="flash":
+		print "SPIFLASH ID: " + str(target.initSpiflash())
+		continue
 	    if serialNumber=="nrst":
 		board.toggle_nrst()
 		continue
@@ -728,7 +731,8 @@ while(testing):
     elif state == "connecting target":
         print "Attempting connect..."   
         if target.open(port = targetPort):
-            state = "mosfet high"
+            state = "spiflashid"
+            #state = "mosfet high"
 #            state = "wait for homing"
         else:
             print colored("Connect failed.",'red')
@@ -882,7 +886,17 @@ while(testing):
             state = "board fail"
         else:     
             state = "uploading"
- 
+
+
+    elif state == "spiflashid":
+        state = "mosfet high"
+        if board.testjig is not "archim": continue
+        print "Testing Archim SPI FLASH Chip by reading the MFG ID..."
+        testProcessor.spiflashid = target.initSpiflash()
+        if -1 in testProcessor.spiflashid:
+            print "Reading SPI FLASH ID failed."
+            state = "board fail"
+
     elif state == "mosfet high":
         passed = True
         print "Testing MOSFETs high..."

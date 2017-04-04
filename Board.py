@@ -205,7 +205,7 @@ class ArchimRambo(Board):
   def programTestFirmware(self):
         self.samba_mode()
         subprocess.Popen( shlex.split( "lsusb -d 27b1:0001" )).wait()
-        program_testfw_cmd = 'bossac -e -w -v -b -R Test_Jig_Firmware.ino.bin'
+        program_testfw_cmd = 'bossac -e -w -v -b -R Test_Jig_Firmware.ino.archim.bin'
         program_testfw__process = subprocess.Popen( shlex.split( program_testfw_cmd ) )
         if program_testfw__process.wait():
                 print colored("Uploading Test Firmware Failed.",'red')
