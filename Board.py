@@ -191,8 +191,8 @@ class ArchimRambo(Board):
     #self.testProcessor.thermistorHigh = 955
     self.testProcessor.rail_0_low = 3.22 #3.3 on MM reads 3.273 on test
     self.testProcessor.rail_0_high = 3.35
-    self.testProcessor.railsLow = [3.22, 23, 4.7]
-    self.testProcessor.railsHigh = [3.35, 25.5, 5.2]
+    self.testProcessor.railsLow = [(3.23-.04), 23, 4.7] #tolerance of regulator - skew of read
+    self.testProcessor.railsHigh = [3.37-.04, 25.5, 5.2] #tolerance of regulator - skew of read
     print "setting supply names: " + str(self.testProcessor.supplyNames)
 
   def setState(self):
