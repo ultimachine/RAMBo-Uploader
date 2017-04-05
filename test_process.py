@@ -398,6 +398,7 @@ while(testing):
 		continue
 	    if serialNumber=="flash":
 		print "SPIFLASH ID: " + str(target.initSpiflash())
+		print "SDCARD: " + str(target.initSdcard())
 		continue
 	    if serialNumber=="nrst":
 		board.toggle_nrst()
@@ -896,6 +897,13 @@ while(testing):
         if -1 in testProcessor.spiflashid:
             print "Reading SPI FLASH ID failed."
             state = "board fail"
+            continue
+        print "Testing Archim SDCARD."
+        testProcessor.sdcard = target.initSdcard()
+        if -1 in testProcessor.spiflashid:
+            print "Reading SDCARD failed."
+            state = "board fail"
+            continue
 
     elif state == "mosfet high":
         passed = True

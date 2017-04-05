@@ -98,6 +98,14 @@ class TestInterface():
         else:
             return [-1]
 
+    def initSdcard(self):
+        """Returns archim spiflash mfg id"""
+        self.serial.write("D_")
+        if self.waitForFinish(timeout=7):
+            return self._findValues()
+        else:
+            return [-1]
+
     def pullupReadPin(self, pin):
         """Returns list with pin state"""
         self.serial.write("Q"+str(pin)+"_")

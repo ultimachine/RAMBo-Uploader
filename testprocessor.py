@@ -16,6 +16,7 @@ class TestProcessor():
         self.endstopLow = []
         self.thermistors = []
         self.spiflashid = []
+        self.sdcard = []
         self.errors = ""
         self.failedAxes = [False,False,False,False,False]
         self.failedMosfets = [False,False,False,False,False,False]
@@ -42,7 +43,21 @@ class TestProcessor():
             if (i == 20):
                 pass
             else:
-                self.errors += "Check SpiFlash chip.\n"
+                self.errors += "Check SpiFlash.\n"
+                passed &= False
+        return passed
+
+    def testSdcard(self):
+        passed = True
+        if self._wasTimedOut(self.supplys):
+            print "...Timed out at Archim SDCARD init test"
+            return False
+
+        for i in self.sdcard:
+            if (i == 42):
+                pass
+            else:
+                self.errors += "Check SDCARD.\n"
                 passed &= False
         return passed
 
@@ -216,6 +231,11 @@ class TestProcessor():
             print self.spiflashid
             passed &= self.testSpiflashid()
 
+        if self.sdcard:
+            print "SDCARD value (42)"
+            print self.sdcard
+            passed &= self.testSdcard()
+
         return passed
 
     def showErrors(self):
@@ -235,6 +255,7 @@ class TestProcessor():
         self.endstopLow = []
         self.thermistors = []
         self.spiflashid = []
+        self.sdcard = []
         self.errors = ""
         self.failedAxes = [False,False,False,False,False]
         self.failedMosfets = [False,False,False,False,False,False]
@@ -253,7 +274,8 @@ class TestProcessor():
                     endstopHigh=self.endstopHigh,
                     endstopLow=self.endstopLow,
                     thermistors=self.thermistors,
-                    spiflashid=self.spiflashid)
+                    spiflashid=self.spiflashid,
+                    sdcard=self.sdcard)
 
     def _wasTimedOut(self, vals):
         if -1 in vals:
