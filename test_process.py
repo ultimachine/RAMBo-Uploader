@@ -92,6 +92,8 @@ if sys.argv[2] == "rambo":
   board = Rambo()
 if sys.argv[2] == "minirambo":
   board = MiniRambo()
+if sys.argv[2] == "einsyrambo":
+  board = EinsyRambo()
 if sys.argv[2] == "archim":
   board = ArchimRambo()
 
@@ -588,6 +590,18 @@ while(testing):
                  print "Enabling Save FW"
                  saveFirmware = True
                  continue
+            if serialNumber == "eh":
+                ehresults = []
+		print "Testing endstops high..."
+		for pin in board.endstopOutPins:
+		    passed = controller.pinHigh(pin)
+		for pin in board.endstopInPins:
+		    ehresults += target.pullupReadPin(pin)
+		if -1 in testProcessor.endstopHigh or not passed:
+		    print "Reading endstops failed."
+                print "names: " + str(["X min", "Y min", "Z min", "X max", "Y max", "Z max"])
+                print "results: " + str(ehresults)
+                continue
 
             try: 
                 sNum = int(serialNumber)

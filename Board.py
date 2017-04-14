@@ -89,18 +89,17 @@ class Rambo(Board):
     self.testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
     self.vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
     self.vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
+    #self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]
     self.mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
     self.mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
     self.endstopOutPins = [83, 82, 81, 80, 79, 78] #controller outputs
     self.endstopInPins = [12, 11, 10, 24, 23, 30] #target inputs
     self.thermistorPins = [0, 1, 2, 7]
     self.motorEnablePins = [29,28,27,26,25]
-    self.setTestFirmware()
-    self.setVendorFirmware()
     self.thresholdCurrent = 0.02
+    self.motorEnabledThresholdCurrent = 1.4
     self.id = 1
     self.testjig = "rambo"
-    self.motorEnabledThresholdCurrent = 1.4
     self.setVendorFirmware()
     self.setTestFirmware()
     self.setTestProcessor()
@@ -121,13 +120,18 @@ class MiniRambo(Board):
 
   def __init__(self):
     Board.__init__(self)
+    self.vrefPins = []
 
     self.triggerPin = 4
     self.testFirmwarePath = "/home/ultimachine/workspace/MiniRamboTestJigFirmware/target_test_firmware.hex"
     self.vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Mini-Rambo-Marlin/Marlin.cpp.hex"
-    self.vrefPins = [6, 5, 4,] #x, y, z, e0, e1 on controller
+    #self.vrefPins = [6, 5, 4,] #x, y, z, e0, e1 on controller
+    #self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]
     self.mosfetOutPins = [3, 6, 8, 4] #On target
     self.mosfetInPins = [44, 45, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+    #self.endstopNames = ["X min", "Y min", "Z min", "X max", "Y max", "Z max"]
+    self.endstopOutPins = [83, 82, 81, 80, 79, 78] #controller outputs
+    self.endstopInPins = [12, 11, 10, 24, 23, 30] #target inputs
     self.thermistorPins = [0, 1, 2]
     self.motorEnablePins = [29,28,27,26]
     self.thresholdCurrent = 0.017
@@ -148,14 +152,24 @@ class MiniRambo(Board):
     self.testProcessor.vrefNames = ["X,Y","Z","E0"]
     self.testProcessor.thermistorNames = ["T0","T1","T2"] #no T3
     self.testProcessor.mosfetNames = ["Bed","Fan1","Fan0","Heat0"]
-    self.testProcessor.thermistorLow = 925
-    self.testProcessor.thermistorHigh = 955
+    #self.testProcessor.thermistorLow = 925
+    #self.testProcessor.thermistorHigh = 955
 
   '''
   This method is made so that the clamping state is skipped in the test program
   '''
   def setState(self):
     return "powering"
+
+class EinsyRambo(MiniRambo):
+  def __init__(self):
+    MiniRambo.__init__(self)
+    self.testFirmwarePath = "/home/ultimachine/workspace/Einsy/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
+    self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/Marlin.einsy.hex"
+    self.setVendorFirmware()
+    self.setTestFirmware()
+    self.testjig = "einsyrambo"
+    self.thresholdCurrent = 0.03
 
 class ArchimRambo(Board):
   def __init__(self):
