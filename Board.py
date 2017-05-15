@@ -84,7 +84,7 @@ class Rambo(Board):
     self.thresholdCurrent = 0.023
     self.id = 1
     self.testjig = "rambo"
-    self.motorEnabledThresholdCurrent = 1.4
+    self.motorEnabledThresholdCurrent = 1.45
     self.setVendorFirmware()
     self.setTestFirmware()
     self.setTestProcessor()
