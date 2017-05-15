@@ -81,7 +81,7 @@ class Rambo(Board):
     self.thermistorPins = [0, 1, 2, 7]
     self.setTestFirmware()
     self.setVendorFirmware()
-    self.thresholdCurrent = 0.02
+    self.thresholdCurrent = 0.023
     self.id = 1
     self.testjig = "rambo"
     self.motorEnabledThresholdCurrent = 1.4
