@@ -80,6 +80,7 @@ overCurrentChecking = True
 currentReadings = []
 saveFirmware = False
 btldrState = True
+checkingDuplicateSerials = True
 
 testStorage = psycopg2.connect(postgresInfo)
 cursor = testStorage.cursor()
@@ -564,6 +565,16 @@ while(testing):
                  print "Enabling Save FW"
                  saveFirmware = True
                  continue
+            if serialNumber == "nodupes":
+                 global checkingDuplicateSerials
+                 print "Allowing duplicate serials"
+                 checkingDuplicateSerials = False
+                 continue
+            if serialNumber == "checkdupes":
+                 global checkingDuplicateSerials
+                 print "Checking duplicate serials"
+                 checkingDuplicateSerials = True
+                 continue
 
             try: 
                 sNum = int(serialNumber)
@@ -603,8 +614,9 @@ while(testing):
 	      print "this 32u2 iserial: ", iserial
 	      if not iserial == str(rows[0][2]):
 	        print colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
-	        state = "start"
-	        continue
+                if checkingDuplicateSerials:
+	            state = "start"
+	            continue
 
 	    #Prevent extra serial numbers attached to single board by checking a boards first assigned serial number. 
             #Example situation: retesting a board but scanning a fresh boards serial number. 
@@ -616,8 +628,9 @@ while(testing):
 	      print "this 32u2 iserial: ", iserial
 	      if not serialNumber == str(rows[0][1]):
 	        print colored("Warning! This board was first tested with a different serial number then the one provided. Try again with the correct serial number.",'yellow')
-	        state = "start"
-	        continue
+                if checkingDuplicateSerials:
+	            state = "start"
+	            continue
 
         if iserial == 0:
             iserial = None #prevent zero from getting stored in db as the iserial.
@@ -678,8 +691,9 @@ while(testing):
                 print "this 32u2 iserial: ", iserial
                 if not iserial == str(rows[0][2]):
                         print colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
-                        state = "board fail"
-                        continue
+                        if checkingDuplicateSerials:
+                            state = "board fail"
+                            continue
 
         #time.sleep(2)
     elif state == "program for test":
