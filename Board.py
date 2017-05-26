@@ -110,7 +110,7 @@ class MiniRambo(Board):
     self.mosfetInPins = [44, 45, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
     self.thermistorPins = [0, 1, 2]
     self.thresholdCurrent = 0.017
-    self.motorEnabledThresholdCurrent = 1.05
+    self.motorEnabledThresholdCurrent = 1.1
     self.id = 2
     self.testjig = "minirambo"
     self.setTestProcessor()
