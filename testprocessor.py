@@ -54,7 +54,7 @@ class TestProcessor():
             else:
                 self.errors += "Test " + self.supplyNames[i] + " supply\n"
                 passed &= False
-        if 4.7 <= self.supplyVoltages[2] <= 5.2:
+        if 4.7 <= self.supplyVoltages[2] <= 5.25:
             pass
         else:
             self.errors += "Test " + self.supplyNames[2] + " supply\n"
