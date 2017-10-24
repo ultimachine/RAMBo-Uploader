@@ -50,9 +50,9 @@ class Board:
     iserialproc = subprocess.Popen(shlex.split("/sbin/udevadm info --query=property --name=" + targetPort),stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     for line in iserialproc.communicate()[0].splitlines():
       if line.split('=')[0] == "ID_SERIAL_SHORT": iserial = line.split('=')[1]
-    if iserial == 0:
-        print colored("USB internal serial number not found.","yellow")
-    return iserial
+    #if iserial == 0:
+    #    print colored("USB internal serial number not found.","yellow")
+    #return iserial
 
   '''
     A method that initializes an ATmega object and defines the processor and
@@ -165,11 +165,26 @@ class EinsyRambo(MiniRambo):
   def __init__(self):
     MiniRambo.__init__(self)
     self.testFirmwarePath = "/home/ultimachine/workspace/Einsy/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
-    self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/Marlin.einsy.hex"
+    #self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/PrusaFirmware.einsy.hex"
+    self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
     self.setVendorFirmware()
     self.setTestFirmware()
     self.testjig = "einsyrambo"
-    self.thresholdCurrent = 0.03
+    self.thresholdCurrent = 0.065
+    self.thermistorPins = [0, 1, 2, 3, 6]
+    self.endstopOutPins = [83, 82, 81 ] #controller outputs
+    self.endstopInPins = [12, 11, 10 ] #target inputs
+    self.testProcessor.thermistorNames = ["T0","T1","T2","ZTHERM","BTHERM"]
+
+class PrusaRambo(EinsyRambo):
+  def __init__(self):
+    MiniRambo.__init__(self)
+    self.testFirmwarePath = "/home/ultimachine/workspace/Einsy/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
+    #self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/PrusaFirmware.einsy.hex"
+    self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
+    self.setVendorFirmware()
+    self.setTestFirmware()
+    MiniRambo.__init__(self)
 
 class ArchimRambo(Board):
   def __init__(self):

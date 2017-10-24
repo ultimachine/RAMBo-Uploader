@@ -95,7 +95,9 @@ class TestProcessor():
         if self._wasTimedOut(self.thermistors):
             print "...Timed out at thermistor test"
             return False
+        print self.thermistors
         for idx, val in enumerate(self.thermistors):
+            print "idx: " + str(idx)
             if not self.thermistorLow <= val <= self.thermistorHigh:
                 self.errors += "Check Thermistor " + self.thermistorNames[idx] + "\n"
                 passed = False

@@ -237,7 +237,8 @@ def programBootloaders():
         #usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
         #usbfw = '/home/ultimachine/Prusa-usbserial.hex'
         bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + usbfw + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
-        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
+        #bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
+        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
         bootloader32u2 = subprocess.Popen( shlex.split( bootcmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader32u2.wait()
@@ -605,7 +606,7 @@ while(testing):
 
             try: 
                 sNum = int(serialNumber)
-                if(  (sNum in range(10000000,10099000))  or  (sNum in range(55500000,55555555)) or  (sNum in range(20000000,20100000))): 
+                if(  (sNum in range(10000000,10199000))  or  (sNum in range(55500000,55555555)) or  (sNum in range(20000000,20100000))): 
                     break
                 else:
                     print "Invalid Entry. (Use 55500000-55555555 for Testing)."
@@ -680,7 +681,8 @@ while(testing):
             print "Uploading Bootloader and setting fuses..."
         #avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
         #avr2560 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158597', u'-pm2560', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i', u'-Uefuse:w:0xFD:m', u'-Uhfuse:w:0xD0:m', u'-Ulfuse:w:0xFF:m', u'-Ulock:w:0x0F:m'])
-
+            if sys.argv[2] == "einsyrambo":
+                time.sleep(1);
             if programBootloaders():
                 print colored("Trying to program bootloaders again..",'yellow')
                 if programBootloaders():
@@ -721,7 +723,9 @@ while(testing):
             state = board.programTestFirmware()
             continue
         #bootloader verification over USB
-        verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + directory + '/stk500boot_v2_mega2560.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
+        #verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + directory + '/stk500boot_v2_mega2560.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
+
+        verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + '/home/ultimachine/workspace/Einsy/stk500v2-prusa' + '/stk500v2-prusa.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
         verify2560bootloader_process = subprocess.Popen( shlex.split( verify2560bootloader_cmd ) )
         if verify2560bootloader_process.wait():
                 print colored("2560 Bootloader Verification FAILED!! ",'red')
@@ -998,8 +1002,12 @@ while(testing):
             state = board.programVendorFirmware()
             continue
 
+        #skip factory fw
+        #state = "testamps"
+        #continue
+
         print "Programming target with vendor firmware..."
-        if avrdude.upload(board.vendorFirmware, timeout = 20):
+        if avrdude.upload(board.vendorFirmware, timeout = 40):
             state = "testamps"
             #state = "processing"
         else:
