@@ -176,15 +176,23 @@ class EinsyRambo(MiniRambo):
     self.endstopInPins = [12, 11, 10 ] #target inputs
     self.testProcessor.thermistorNames = ["T0","T1","T2","ZTHERM","BTHERM"]
 
-class PrusaRambo(EinsyRambo):
+class PrusaEinsy(EinsyRambo):
   def __init__(self):
-    MiniRambo.__init__(self)
-    self.testFirmwarePath = "/home/ultimachine/workspace/Einsy/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
+    EinsyRambo.__init__(self)
     #self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/PrusaFirmware.einsy.hex"
+    #self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
+    self.vendorFirmwarePath = "/home/ultimachine/Arduino/Blink/Blink.ino.rambo.hex"
+    self.setVendorFirmware()
+    self.firmware32u2 = "/home/ultimachine/Prusa-usbserial-DFU.hex"
+    self.bootloader2560 = "/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex"
+
+class UltimachineEinsy(EinsyRambo):
+  def __init__(self):
+    EinsyRambo.__init__(self)
     self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
     self.setVendorFirmware()
-    self.setTestFirmware()
-    MiniRambo.__init__(self)
+    self.firmware32u2 = "/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX"
+    self.bootloader2560 = "/home/ultimachine/workspace/RAMBo-Uploader/stk500boot_v2_mega2560.hex"
 
 class ArchimRambo(Board):
   def __init__(self):

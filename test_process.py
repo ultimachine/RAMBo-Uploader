@@ -96,6 +96,10 @@ if sys.argv[2] == "einsyrambo":
   board = EinsyRambo()
 if sys.argv[2] == "archim":
   board = ArchimRambo()
+if sys.argv[2] == "PrusaEinsy":
+  board = PrusaEinsy()
+if sys.argv[2] == "UltimachineEinsy":
+  board = UltimachineEinsy()
 
 controllerPorts  = ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74035323434351A00261-if00"] #10006390 Rambo Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74034313938351C0A291-if00"] #10024352 Rambo Controller
@@ -236,9 +240,12 @@ def beep():
 def programBootloaders():
         #usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
         #usbfw = '/home/ultimachine/Prusa-usbserial.hex'
-        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + usbfw + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
+        #bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + usbfw + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
+        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + board.firmware32u2 + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
+
         #bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
-        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
+        #bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
+        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:' + board.bootloader2560 + ':i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
         bootloader32u2 = subprocess.Popen( shlex.split( bootcmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader32u2.wait()
@@ -725,7 +732,8 @@ while(testing):
         #bootloader verification over USB
         #verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + directory + '/stk500boot_v2_mega2560.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
 
-        verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + '/home/ultimachine/workspace/Einsy/stk500v2-prusa' + '/stk500v2-prusa.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
+        #verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + '/home/ultimachine/workspace/Einsy/stk500v2-prusa' + '/stk500v2-prusa.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
+        verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + board.bootloader2560 + ':i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
         verify2560bootloader_process = subprocess.Popen( shlex.split( verify2560bootloader_cmd ) )
         if verify2560bootloader_process.wait():
                 print colored("2560 Bootloader Verification FAILED!! ",'red')
