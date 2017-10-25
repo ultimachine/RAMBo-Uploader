@@ -238,6 +238,7 @@ def beep():
                     call(["beep","-f 2250"])
 
 def programBootloaders():
+        time.sleep(1) #2560 AVR ICSP is powered by the board and needs more time to be recognized by the linux computer.
         #usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
         #usbfw = '/home/ultimachine/Prusa-usbserial.hex'
         #bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + usbfw + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
