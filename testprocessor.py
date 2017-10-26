@@ -28,7 +28,7 @@ class TestProcessor():
         self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]  
         self.endstopNames = ["X min", "Y min", "Z min", "X max", "Y max", "Z max"]
         self.thermistorLow = 956
-        self.thermistorHigh = 989
+        self.thermistorHigh = 992
         self.railsLow = [23, 23, 4.7]
         self.railsHigh = [25.5, 25.5, 5.2]
 
