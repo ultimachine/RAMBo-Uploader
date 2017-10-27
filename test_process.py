@@ -906,14 +906,16 @@ while(testing):
 #            state = "processing"
 
     elif state == "supply test":
+        state = "uploading"
         print "Testing supply voltages..."
         for pin in supplyPins:
             testProcessor.supplys += controller.analogRead(pin)
         if -1 in testProcessor.supplys:
             print "Reading supplies failed."
             state = "board fail"
-        else:     
-            state = "uploading"
+        if testProcessor.supplys[2] <= 5.0:
+            print "ERROR: Not reading 5 volts. Not safe to continue."
+            state = "board fail"
 
 
     elif state == "spiflashid":
