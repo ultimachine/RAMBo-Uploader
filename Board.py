@@ -170,7 +170,7 @@ class EinsyRambo(MiniRambo):
     self.setVendorFirmware()
     self.setTestFirmware()
     self.testjig = "einsyrambo"
-    self.thresholdCurrent = 0.065
+    self.thresholdCurrent = 0.085
     self.thermistorPins = [0, 1, 2, 3, 6]
     self.endstopOutPins = [83, 82, 81 ] #controller outputs
     self.endstopInPins = [12, 11, 10 ] #target inputs
