@@ -63,7 +63,7 @@ homingRate = 8000 #5000
 clampingRate = 7000 #4000
 clampingLength = 15980 #16200
 monitorFrequency = 1000
-stepperTestRPS = 5 #3 #rotations per second for the stepper test
+stepperTestRPS = 4 #3 #rotations per second for the stepper test
 controllerPort = None
 testing = True
 state = "start"
@@ -906,6 +906,11 @@ while(testing):
 #            state = "processing"
 
     elif state == "supply test":
+        #logic_voltage_reading = analog2volt(controller.analogRead(supplyPins[2]))
+        #print "5V PIN READING: " + str(logic_voltage_reading)
+        #if logic_voltage_reading <= 5.0:
+        #    state = "board fail"
+        #    continue
         state = "uploading"
         print "Testing supply voltages..."
         for pin in supplyPins:
@@ -913,7 +918,9 @@ while(testing):
         if -1 in testProcessor.supplys:
             print "Reading supplies failed."
             state = "board fail"
-        if testProcessor.supplys[2] <= 5.0:
+            continue
+        if analog2volt(testProcessor.supplys)[2] <= 5.0:
+            print "5V PIN READING: " + str(analog2volt(testProcessor.supplys)[2])
             print "ERROR: Not reading 5 volts. Not safe to continue."
             state = "board fail"
 
