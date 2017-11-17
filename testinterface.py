@@ -106,6 +106,19 @@ class TestInterface():
         else:
             return [-1]
 
+    #driveMode options
+    #driveMode = 0 sets diag0 to push_pull
+    #driveMode = 1 sets diag1 to push_pull
+    #driveMode = 2 sets both back to open drain
+    ####REMOVED pin = chip select for the driver to set
+    def set_trinamic_diag_mode(self, driveMode=2):
+        """Program the Trinamic TMC2130 Diag outputs"""
+        self.serial.write("T"+str(driveMode)+"_") #"P"+str(pin)+
+        if self.waitForFinish():
+            return self._findValues()
+        else:
+            return [-1]
+
     def pullupReadPin(self, pin):
         """Returns list with pin state"""
         self.serial.write("Q"+str(pin)+"_")

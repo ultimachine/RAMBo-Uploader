@@ -175,6 +175,9 @@ class EinsyRambo(MiniRambo):
     self.endstopOutPins = [83, 82, 81 ] #controller outputs
     self.endstopInPins = [12, 11, 10 ] #target inputs
     self.testProcessor.thermistorNames = ["T0","T1","T2","ZTHERM","BTHERM"]
+    self.chipSelectPins = [41, 39, 67, 66] # X Y Z E chip selects
+    self.diagPins = [64, 69, 68, 65] # X, Y, Z, E0
+    self.diagPinNames = ['X diag','Y diag','Z diag','E diag']
 
 class PrusaEinsy(EinsyRambo):
   def __init__(self):

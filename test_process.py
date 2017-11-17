@@ -353,6 +353,68 @@ def get_count_for_runid(runID):
     count = len(rowsCount)
     return count
 
+def test_diags(drive_mode_name,drive_mode=2):
+        print "Testing diags " + str(drive_mode_name) + "..."
+        diag_results = []
+        target.set_trinamic_diag_mode(drive_mode)
+        for pin in board.diagPins:
+            diag_results += target.pullupReadPin(pin)
+        if -1 in diag_results:
+            print "Reading diags failed."
+        print str(diag_results)
+        return diag_results
+
+def test_diags_highREFACTOR2():
+        testProcessor.diagsHigh = test_diags("high",2); #2 = open drain
+        if -1 in testProcessor.diagsHigh:
+            return -1
+        return 0
+
+def test_diags0_lowREFACTOR2():
+        testProcessor.diags0_Low = test_diags("0 low",0); #2 = open drain
+        if -1 in testProcessor.diags0_Low:
+            return -1
+        return 0
+
+def test_diags_high():
+        print "Testing diags high..."
+        target.set_trinamic_diag_mode(2)
+        for pin in board.diagPins:
+            testProcessor.diagsHigh += target.pullupReadPin(pin)
+            #testProcessor.diagsHigh = [0,0,0,0] #FAIL TEST
+        if -1 in testProcessor.diagsHigh:
+            print "Reading diags failed."
+            return -1
+        else:
+            print str(testProcessor.diagsHigh)
+            return 0
+
+def test_diags0_low():
+        print "Testing diags0 low..."
+        target.set_trinamic_diag_mode(0)
+        for pin in board.diagPins:
+            testProcessor.diags0_Low += target.pullupReadPin(pin)
+            #testProcessor.diags0_Low = [1,1,1,1] #FAIL TEST
+        if -1 in testProcessor.diags0_Low:
+            print "Reading diags failed."
+            return -1
+        else:
+            print str(testProcessor.diags0_Low)
+            return 0
+
+def test_diags1_low():
+        print "Testing diags1 low..."
+        target.set_trinamic_diag_mode(1)
+        for pin in board.diagPins:
+            testProcessor.diags1_Low += target.pullupReadPin(pin)
+            #testProcessor.diags1_Low = [1,1,1,1] #FAIL TEST
+        if -1 in testProcessor.diags1_Low:
+            print "Reading diags failed."
+            return -1
+        else:
+            print str(testProcessor.diags1_Low)
+            return 0
+
 orderRunId = set_run_id()
 
 while(testing):
@@ -610,6 +672,39 @@ while(testing):
 		    print "Reading endstops failed."
                 print "names: " + str(["X min", "Y min", "Z min", "X max", "Y max", "Z max"])
                 print "results: " + str(ehresults)
+                continue
+            if serialNumber == "dh":
+                dhresults = []
+		print "Testing diag pins high..."
+                target.set_trinamic_diag_mode(2)
+		for pin in board.diagPins:
+		    dhresults += target.pullupReadPin(pin)
+		if -1 in dhresults:
+		    print "Reading diags failed."
+                print "names: " + str(["X diag", "Y diag", "Z diag", "E diag"])
+                print "results: " + str(dhresults)
+                continue
+            if serialNumber == "dl":
+                dl_results = []
+		print "Testing diag0 pins low..."
+
+		target.set_trinamic_diag_mode(0)
+		for pin in board.diagPins:
+		    dl_results += target.pullupReadPin(pin)
+		if -1 in dl_results:
+		    print "Reading diags failed."
+                print "names: " + str(["X diag0", "Y diag0", "Z diag0", "E diag0"])
+                print "diag0 low results: " + str(dl_results)
+                continue
+            if serialNumber == "d":
+                diag_results = []
+		print "Testing diag0 pins low..."
+		for pin in board.diagPins:
+		    diag_results += target.pullupReadPin(pin)
+		if -1 in diag_results:
+		    print "Reading diags failed."
+                print "names: " + str(["X diag", "Y diag", "Z diag", "E diag"])
+                print "diag results: " + str(diag_results)
                 continue
 
             try: 
@@ -968,6 +1063,15 @@ while(testing):
             state = "endstop high"
 
     elif state == "endstop high":
+        if test_diags_high():
+            state = "board fail"
+            continue
+        if test_diags0_low():
+            state = "board fail"
+            continue
+        if test_diags1_low():
+            state = "board fail"
+            continue
         passed = True
         print "Testing endstops high..."
         for pin in board.endstopOutPins:
@@ -1020,7 +1124,7 @@ while(testing):
             state = board.programVendorFirmware()
             continue
 
-        #skip factory fw
+        ##skip factory fw
         #state = "testamps"
         #continue
 

@@ -31,6 +31,12 @@ class TestProcessor():
         self.thermistorHigh = 992
         self.railsLow = [23, 23, 4.7]
         self.railsHigh = [25.5, 25.5, 5.2]
+        self.diagNames = ["X diag", "Y diag", "Z diag", "E diag"]
+        self.diag0_names = ["X diag0", "Y diag0", "Z diag0", "E diag0"]
+        self.diag1_names = ["X diag1", "Y diag1", "Z diag1", "E diag1"]
+        self.diagsHigh = []
+        self.diags0_Low = []
+        self.diags1_Low = []
 
 
     def testSpiflashid(self):
@@ -139,6 +145,40 @@ class TestProcessor():
                 passed = False
         return passed
 
+    def testDiagsHigh(self):
+        passed = True
+        if self._wasTimedOut(self.diagsHigh):
+            print "...Timed out at diags high test"
+            return False
+        for idx, val in enumerate(self.diagsHigh):
+            if not val == 1:
+                self.errors += "Check " + self.diagNames[idx] + "\n"
+                passed = False
+        return passed
+
+    def testDiags0_Low(self):
+        passed = True
+        if self._wasTimedOut(self.diags0_Low):
+            print "...Timed out at diags0 low test"
+            return False
+        for idx, val in enumerate(self.diags0_Low):
+            if not val == 0:
+                self.errors += "Check " + self.diag0_names[idx] + "\n"
+                passed = False
+        return passed
+
+    def testDiags1_Low(self):
+        passed = True
+        if self._wasTimedOut(self.diags1_Low):
+            print "...Timed out at diags1 low test"
+            return False
+        for idx, val in enumerate(self.diags1_Low):
+            if not val == 0:
+                self.errors += "Check " + self.diag1_names[idx] + "\n"
+                passed = False
+        return passed
+
+
     def testEndstopLow(self):
         passed = True
         if self._wasTimedOut(self.endstopLow):
@@ -238,6 +278,21 @@ class TestProcessor():
             print self.sdcard
             passed &= self.testSdcard()
 
+        if self.testDiagsHigh:
+            print "Diags high values..."
+            print self.diagsHigh
+            passed &= self.testDiagsHigh()
+
+        if self.testDiags0_Low:
+            print "Diags0 low values..."
+            print self.diags0_Low
+            passed &= self.testDiags0_Low()
+
+        if self.testDiags1_Low:
+            print "Diags1 low values..."
+            print self.diags1_Low
+            passed &= self.testDiags1_Low()
+
         return passed
 
     def showErrors(self):
@@ -258,6 +313,9 @@ class TestProcessor():
         self.thermistors = []
         self.spiflashid = []
         self.sdcard = []
+        self.diagsHigh = []
+        self.diags0_Low = []
+        self.diags1_Low = []
         self.errors = ""
         self.failedAxes = [False,False,False,False,False]
         self.failedMosfets = [False,False,False,False,False,False]
@@ -277,7 +335,11 @@ class TestProcessor():
                     endstopLow=self.endstopLow,
                     thermistors=self.thermistors,
                     spiflashid=self.spiflashid,
-                    sdcard=self.sdcard)
+                    sdcard=self.sdcard,
+                    diagsHigh=self.diagsHigh,
+                    diags0_Low=self.diags0_Low,
+                    diags1_Low=self.diags0_Low,
+                   )
 
     def _wasTimedOut(self, vals):
         if -1 in vals:
