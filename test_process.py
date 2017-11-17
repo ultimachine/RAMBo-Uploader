@@ -408,6 +408,7 @@ def test_diags1_low():
         for pin in board.diagPins:
             testProcessor.diags1_Low += target.pullupReadPin(pin)
             #testProcessor.diags1_Low = [1,1,1,1] #FAIL TEST
+        target.set_trinamic_diag_mode(2) #Enables GCONF EXT VREF again
         if -1 in testProcessor.diags1_Low:
             print "Reading diags failed."
             return -1
