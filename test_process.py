@@ -100,6 +100,8 @@ if sys.argv[2] == "PrusaEinsy":
   board = PrusaEinsy()
 if sys.argv[2] == "UltimachineEinsy":
   board = UltimachineEinsy()
+if sys.argv[2] == "EinsyRetro":
+  board = EinsyRetro()
 
 controllerPorts  = ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74035323434351A00261-if00"] #10006390 Rambo Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74034313938351C0A291-if00"] #10024352 Rambo Controller
@@ -913,6 +915,8 @@ while(testing):
                 state = "fullstep"
 
     elif state == "fullstep":
+        print "Setting VREF to " + str(board.targetVref)
+	target.setMotorCurrent(board.targetVref) #EINSY RETRO
         print "Testing full step forward..."
         target.setMicroStepping(1)
         target.runSteppers(frequency = 200*stepperTestRPS, steps = 200, 
@@ -1015,6 +1019,9 @@ while(testing):
             print "Reading supplies failed."
             state = "board fail"
             continue
+        #
+        # Minimum Voltage Test for Safe Programming (prevent overstress)
+        #
         if analog2volt(testProcessor.supplys)[2] <= 5.0:
             print "5V PIN READING: " + str(analog2volt(testProcessor.supplys)[2])
             print "ERROR: Not reading 5 volts. Not safe to continue."
