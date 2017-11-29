@@ -108,7 +108,7 @@ controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_7
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55539333937351615271-if00"] #10059679 Mini-Rambo Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5553933393735151A2A1-if00"] #10059735 Backup Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55533343837351102242-if00"] #10059099 Bench/Archim Controller
-controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55539333937351910142-if00"] #Einsy Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_75530313331351713281-if00"] #Einsy Controller
 for item in controllerPorts:
     if os.path.exists(item): controllerPort = item
 
