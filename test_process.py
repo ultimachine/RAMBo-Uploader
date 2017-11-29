@@ -1023,7 +1023,7 @@ while(testing):
         #
         # Minimum Voltage Test for Safe Programming (prevent overstress)
         #
-        if analog2volt(testProcessor.supplys)[2] <= 5.0:
+        if analog2volt(testProcessor.supplys)[2] <= 4.95:
             print "5V PIN READING: " + str(analog2volt(testProcessor.supplys)[2])
             print "ERROR: Not reading 5 volts. Not safe to continue."
             state = "board fail"
