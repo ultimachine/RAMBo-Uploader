@@ -186,8 +186,10 @@ class PrusaEinsy(EinsyRambo):
     #self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
     self.vendorFirmwarePath = "/home/ultimachine/Arduino/Blink/Blink.ino.rambo.hex"
     self.setVendorFirmware()
-    self.firmware32u2 = "/home/ultimachine/Prusa-usbserial-DFU.hex"
-    self.bootloader2560 = "/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex"
+    #self.firmware32u2 = "/home/ultimachine/Prusa-usbserial-DFU.hex"
+    self.firmware32u2 = "/home/ultimachine/workspace/Einsy/PrusaBootloaders/Prusa-m32u2-DFU.hex"
+    #self.bootloader2560 = "/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex"
+    self.bootloader2560 = "/home/ultimachine/workspace/Einsy/PrusaBootloaders/stk500boot_v2_mega2560.hex"
     self.targetVref = 255
 
 class UltimachineEinsy(EinsyRambo):
