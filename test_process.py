@@ -78,6 +78,7 @@ overCurrentChecking = True
 currentReadings = []
 saveFirmware = False
 btldrState = True
+bootloadOnlyMode = False
 
 testStorage = psycopg2.connect(postgresInfo)
 cursor = testStorage.cursor()
@@ -329,6 +330,7 @@ def printHelp():
 		print "s: supply test \n"
 		print "a: current test \n"
 		print "id: print internal serial id \n"
+                print "btonly: toggle bootloader only mode"
 
 def set_run_id():
     cursor.execute("""SELECT serial, timestamp,productionrunid,testjig FROM public.testdata WHERE testjig=%s ORDER BY timestamp DESC LIMIT 1""", (board.testjig,))
@@ -711,6 +713,15 @@ while(testing):
                 print "diag results: " + str(diag_results)
                 continue
 
+            if serialNumber == "btonly":
+                if bootloadOnlyMode == True:
+                    print "Boot Only Mode Disabled"
+                    bootloadOnlyMode = False
+                else:
+                    print "Boot Only Mode ENABLED"
+                    bootloadOnlyMode = True
+                continue
+
             try: 
                 sNum = int(serialNumber)
                 if(  (sNum in range(10000000,10199000))  or  (sNum in range(55500000,55555555)) or  (sNum in range(20000000,20100000))): 
@@ -784,6 +795,7 @@ while(testing):
             state = "program for test"
             continue
         state = "iserialcheck"
+
         if btldrState==True:
             print "Uploading Bootloader and setting fuses..."
         #avr32u2 = subprocess.Popen(['/usr/bin/avrdude', '-v', '-v', '-c', u'avrispmkII', '-P', u'usb:0200158420', u'-patmega32u2', u'-Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX:i', u'-Uefuse:w:0xF4:m', u'-Uhfuse:w:0xD9:m', u'-Ulfuse:w:0xEF:m', u'-Ulock:w:0x0F:m'])
@@ -828,6 +840,10 @@ while(testing):
     elif state == "program for test":
         if board.testjig == "archim":
             state = board.programTestFirmware()
+            continue
+
+        if bootloadOnlyMode==True:
+            state = "program marlin"
             continue
         #bootloader verification over USB
         #verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + directory + '/stk500boot_v2_mega2560.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
@@ -1126,8 +1142,9 @@ while(testing):
         sys.stdout.flush()
         termios.tcflush(sys.stdin, termios.TCIOFLUSH)
 
-        print "Disconnecting target from test server..."
-        board.target.close()
+        if bootloadOnlyMode == False:
+            print "Disconnecting target from test server..."
+            board.target.close()
 
         if board.testjig == "archim":
             state = board.programVendorFirmware()
@@ -1155,10 +1172,16 @@ while(testing):
     elif state == "processing":
         if testProcessor.verifyAllTests():
             call(["./tpgrep.sh",serialNumber])
-            print colored(serialNumber + " Board passed!", 'green')
+            if bootloadOnlyMode == True:
+                print colored(serialNumber + " Bootloader success!", 'green')
+            else:
+                print colored(serialNumber + " Board passed!", 'green')
             testProcessor.errors = "Passed" + testProcessor.errors
+            tplog_msg = ' Passed\n'
+            if bootloadOnlyMode == True:
+                tplog_msg = " Btldr" + tplog_msg
             with open(logFile, "a") as tpLog:
-                tpLog.write(serialNumber + ' Passed\n')
+                tpLog.write(serialNumber + tplog_msg)
             state = "finished"
         else:
             powerOff()
@@ -1168,6 +1191,8 @@ while(testing):
             with open(logFile, "a") as tpLog:
                 tpLog.write(serialNumber + ' Failed\n')
             state = "enter code"
+        if bootloadOnlyMode == True:
+            testProcessor.errors = "Bootloader " + testProcessor.errors
         testProcessor.showErrors()
         
     elif state == "board fail":
