@@ -1047,13 +1047,25 @@ while(testing):
 
     elif state == "spiflashid":
         state = "mosfet high"
-        if board.testjig is not "archim": continue
-        print "Testing Archim SPI FLASH Chip by reading the MFG ID..."
+        if board.testjig not in ["archim","einsyrambo"]: continue
+        print "Testing SPI FLASH Chip by reading the ID..."
         testProcessor.spiflashid = target.initSpiflash()
+        print colored(format(int(testProcessor.spiflashid[0]),"#x"), 'blue')
         if -1 in testProcessor.spiflashid:
             print "Reading SPI FLASH ID failed."
             state = "board fail"
             continue
+
+        print "Testing SPI FLASH Chip by writing the number 42 then reading it back..."
+        testProcessor.spiflashData = target.spiflashWriteRead(42)
+        print colored(testProcessor.spiflashData, 'blue')
+        if -1 in testProcessor.spiflashData:
+            print "Reading spi flash data time out."
+            state = "board fail"
+            continue
+
+
+        if board.testjig is not "archim": continue
         print "Testing Archim SDCARD."
         testProcessor.sdcard = target.initSdcard()
         if -1 in testProcessor.spiflashid:
@@ -1098,6 +1110,8 @@ while(testing):
             state = "board fail"
             continue
         passed = True
+        if board.testjig == "einsyrambo":
+            target.pinLow(77) #Drive SDCard Chip Select low to test the MISO buffer. The miso buffers enable pin is connected to SDSS
         print "Testing endstops high..."
         for pin in board.endstopOutPins:
             passed &= controller.pinHigh(pin)
@@ -1121,6 +1135,8 @@ while(testing):
             state = "board fail"
         else:
             state = "vrefs"
+        if board.testjig == "einsyrambo":
+            target.pinHigh(77) #Drive SDCard Chip Select High
 
     elif state == "thermistors":
         print "Testing thermistor values..."

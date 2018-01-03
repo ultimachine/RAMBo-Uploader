@@ -16,6 +16,7 @@ class TestProcessor():
         self.endstopLow = []
         self.thermistors = []
         self.spiflashid = []
+        self.spiflashData = []
         self.sdcard = []
         self.errors = ""
         self.failedAxes = [False,False,False,False,False]
@@ -41,15 +42,29 @@ class TestProcessor():
 
     def testSpiflashid(self):
         passed = True
-        if self._wasTimedOut(self.supplys):
-            print "...Timed out at Archim SPI FLASH ID test"
+        if self._wasTimedOut(self.spiflashid):
+            print "...Timed out at SPI FLASH ID test"
             return False
 
         for i in self.spiflashid:
-            if (i == 20):
+            if (i != 0 and i != 1):
                 pass
             else:
                 self.errors += "Check SpiFlash.\n"
+                passed &= False
+        return passed
+
+    def testSpiflashData(self):
+        passed = True
+        if self._wasTimedOut(self.spiflashData):
+            print "...Timed out at SPI FLASH WriteRead test"
+            return False
+
+        for i in self.spiflashData:
+            if (i == 42):
+                pass
+            else:
+                self.errors += "Check SPIFLASH.\n"
                 passed &= False
         return passed
 
@@ -273,6 +288,12 @@ class TestProcessor():
             print self.spiflashid
             passed &= self.testSpiflashid()
 
+        if self.spiflashData:
+            print "Spiflash data value (42)"
+            print self.spiflashData
+            passed &= self.testSpiflashData()
+
+
         if self.sdcard:
             print "SDCARD value (42)"
             print self.sdcard
@@ -320,6 +341,7 @@ class TestProcessor():
         self.failedAxes = [False,False,False,False,False]
         self.failedMosfets = [False,False,False,False,False,False]
         self.failedEndstops = [False,False,False,False,False,False]
+        self.spiflashData = []
 
     def resultsDictionary(self):
         return dict(fullStep=self.fullStep,

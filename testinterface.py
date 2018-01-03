@@ -98,6 +98,14 @@ class TestInterface():
         else:
             return [-1]
 
+    def spiflashWriteRead(self, value): #Write SPIFLASH then READ it's value to verify
+        """Returns list with pin state"""
+        self.serial.write("S"+str(pin)+"_")
+        if self.waitForFinish():
+            return self._findValues() 
+        else:
+            return [-1]
+
     def initSdcard(self):
         """Returns archim spiflash mfg id"""
         self.serial.write("D_")

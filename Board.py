@@ -164,7 +164,7 @@ class MiniRambo(Board):
 class EinsyRambo(MiniRambo):
   def __init__(self):
     MiniRambo.__init__(self)
-    self.testFirmwarePath = "/home/ultimachine/workspace/Einsy/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
+    self.testFirmwarePath = "/home/ultimachine/workspace/Einsy1.1/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
     #self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/PrusaFirmware.einsy.hex"
     self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
     self.setVendorFirmware()
@@ -172,8 +172,9 @@ class EinsyRambo(MiniRambo):
     self.testjig = "einsyrambo"
     self.thresholdCurrent = 0.085
     self.thermistorPins = [0, 1, 2, 3, 6]
-    self.endstopOutPins = [83, 82, 81 ] #controller outputs
-    self.endstopInPins = [12, 11, 10 ] #target inputs
+    self.endstopOutPins = [83, 82, 81, 80 ] #controller outputs
+    self.endstopInPins = [12, 11, 10, 50 ] #target inputs XMIN YMIN ZPROBE MISO
+    self.testProcessor.endstopNames = ["X min", "Y min", "Z probe", "MISObuf"]
     self.testProcessor.thermistorNames = ["T0","T1","T2","ZTHERM","BTHERM"]
     self.chipSelectPins = [41, 39, 67, 66] # X Y Z E chip selects
     self.diagPins = [64, 69, 68, 65] # X, Y, Z, E0
