@@ -179,6 +179,7 @@ class EinsyRambo(MiniRambo):
     self.chipSelectPins = [41, 39, 67, 66] # X Y Z E chip selects
     self.diagPins = [64, 69, 68, 65] # X, Y, Z, E0
     self.diagPinNames = ['X diag','Y diag','Z diag','E diag']
+    self.targetVref = 255
 
 class PrusaEinsy(EinsyRambo):
   def __init__(self):
@@ -191,7 +192,6 @@ class PrusaEinsy(EinsyRambo):
     self.firmware32u2 = "/home/ultimachine/workspace/Einsy/PrusaBootloaders/Prusa-m32u2-DFU.hex"
     #self.bootloader2560 = "/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex"
     self.bootloader2560 = "/home/ultimachine/workspace/Einsy/PrusaBootloaders/stk500boot_v2_mega2560.hex"
-    self.targetVref = 255
 
 class UltimachineEinsy(EinsyRambo):
   def __init__(self):
