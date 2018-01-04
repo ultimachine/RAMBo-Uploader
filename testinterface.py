@@ -100,7 +100,7 @@ class TestInterface():
 
     def spiflashWriteRead(self, value): #Write SPIFLASH then READ it's value to verify
         """Returns list with pin state"""
-        self.serial.write("S"+str(pin)+"_")
+        self.serial.write("S"+str(value)+"_")
         if self.waitForFinish():
             return self._findValues() 
         else:
