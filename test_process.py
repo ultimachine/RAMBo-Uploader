@@ -1110,6 +1110,8 @@ while(testing):
             state = "board fail"
             continue
         passed = True
+        if board.testjig == "einsyretro":
+            target.pinLow(53) #Drive SDCard Chip Select low to test the MISO buffer. The miso buffers enable pin is connected to SDSS
         if board.testjig == "einsyrambo":
             target.pinLow(77) #Drive SDCard Chip Select low to test the MISO buffer. The miso buffers enable pin is connected to SDSS
         print "Testing endstops high..."
@@ -1135,6 +1137,8 @@ while(testing):
             state = "board fail"
         else:
             state = "vrefs"
+        if board.testjig == "einsyretro":
+            target.pinHigh(53) #Drive SDCard Chip Select High
         if board.testjig == "einsyrambo":
             target.pinHigh(77) #Drive SDCard Chip Select High
 

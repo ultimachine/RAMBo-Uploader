@@ -204,7 +204,7 @@ class UltimachineEinsy(EinsyRambo):
 class EinsyRetro(EinsyRambo):
   def __init__(self):
     EinsyRambo.__init__(self)
-    self.vendorFirmwarePath = "/home/ultimachine/Arduino/Blink/Blink.ino.rambo.hex"
+    self.vendorFirmwarePath = "/home/ultimachine/workspace/EinsyRetro/Marlin/Marlin/Marlin.ino.rambo.hex"
     self.setVendorFirmware()
     self.firmware32u2 = "/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX"
     self.bootloader2560 = "/home/ultimachine/workspace/RAMBo-Uploader/stk500boot_v2_mega2560.hex"
@@ -215,11 +215,12 @@ class EinsyRetro(EinsyRambo):
 
     self.thermistorPins = [0, 1, 2, 6] #Remove Analog Input 3 (was ztherm) for EinsyRetro
     self.testProcessor.thermistorNames = ["T0","T1","T2","BTHERM"] #remove ZTHERM
-    self.endstopOutPins = [83, 82, 81, 79 ] #controller outputs, #add back YMAX controller pin
-    self.endstopInPins = [12, 11, 10, 57 ] #target inputs, #add YMAX back (prev ZTHERM) #81, 57, 7
-    self.testProcessor.endstopNames = ["X min", "Y min", "Z min", "Y max"] #"X max", "Z max"
+    self.endstopOutPins = [83, 82, 81, 79, 78 ] #controller outputs, #add back YMAX controller pin
+    self.endstopInPins = [12, 11, 10, 57, 50 ] #target inputs, #add YMAX back (prev ZTHERM) #81, 57, 7
+    self.testProcessor.endstopNames = ["X min", "Y min", "Z min", "Y max", "MISObuf"] #"X max", "Z max"
 
     self.testProcessor.railsHigh[2] = 5.3 #max 5V rail voltage. raised for einsyretro samples.
+    self.testjig = "einsyretro"
 
 class ArchimRambo(Board):
   def __init__(self):
