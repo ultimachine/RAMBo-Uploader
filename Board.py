@@ -172,7 +172,7 @@ class EinsyRambo(MiniRambo):
     self.testjig = "einsyrambo"
     self.thresholdCurrent = 0.085
     self.thermistorPins = [0, 1, 2, 3, 6]
-    self.endstopOutPins = [83, 82, 81, 80 ] #controller outputs
+    self.endstopOutPins = [83, 82, 81, 78 ] #80 #controller outputs
     self.endstopInPins = [12, 11, 10, 50 ] #target inputs XMIN YMIN ZPROBE MISO
     self.testProcessor.endstopNames = ["X min", "Y min", "Z probe", "MISObuf"]
     self.testProcessor.thermistorNames = ["T0","T1","T2","ZTHERM","BTHERM"]
