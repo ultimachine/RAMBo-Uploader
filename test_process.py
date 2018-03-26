@@ -576,6 +576,32 @@ while(testing):
                  checkingDuplicateSerials = True
                  continue
 
+            if serialNumber == "eh":
+                passed = True
+                results = []
+                print "Testing endstops high..."
+                for pin in endstopOutPins:
+                    passed &= controller.pinHigh(pin)
+                for pin in endstopInPins:
+                    results += target.readPin(pin)
+                if -1 in testProcessor.endstopHigh or not passed:
+                    print "Reading endstops failed."
+                print "results: " + str(results)
+                continue
+
+            if serialNumber == "el":
+                passed = True
+                results = []
+                print "Testing endstops low..."
+                for pin in endstopOutPins:
+                    passed &= controller.pinLow(pin)
+                for pin in endstopInPins:
+                    results += target.readPin(pin)
+                if -1 in testProcessor.endstopLow or not passed:
+                    print "Reading endstops failed."
+                print "results: " + str(results)
+                continue
+
             try: 
                 sNum = int(serialNumber)
                 if(  (sNum in range(10000000,10199000))  or  (sNum in range(55500000,55555555)) or (sNum in range(20000000,20099000))):
