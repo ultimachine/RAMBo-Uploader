@@ -26,6 +26,9 @@ import termios
 import datetime
 import finishedGoods
 from Board import *
+from compatible_mode_programmable_psu_interface import *  #COMP (COMPatibility commands) see 663xxprg.pdf
+from programmable_psu_interface import * #SCPI (Standard Commands for Programmable Instruments) see 663xxprg.pdf
+from direct_psu_interface import *
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
@@ -69,7 +72,7 @@ testing = True
 state = "start"
 serialNumber = ""
 supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
-logFile = '/home/ultimachine/tplog.txt'
+logFile = os.getenv("HOME") + '/tplog.txt'
 relayBedMotorsPin = 4
 relayBedPin = 4
 relayLogicPin = 5
@@ -112,6 +115,8 @@ controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5553933393735151A2A1-if00"] #10059735 Backup Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55533343837351102242-if00"] #10059099 Bench/Archim Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_75530313331351713281-if00"] #Einsy Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_75530313231351E070B1-if00"] #Einsy Controller
+
 for item in controllerPorts:
     if os.path.exists(item): controllerPort = item
 
@@ -128,6 +133,12 @@ target = board.target #TestInterface()
 if not controller.open(port = controllerPort):
     print "Check controller connection."
     sys.exit(0)
+
+psu = CompatProgrammablePSU()
+#psu = ProgrammablePSU()
+#psu = DirectPSU()
+psu.controller = controller
+psu.open()
 
 #Setup up avrdude config for upload to an Arduino.
 avrdude = Avrdude()
@@ -157,21 +168,21 @@ print "Monitoring test controller..."
 def analog2volt(readings=[], voltage = 5, bits = 10, dividerFactor = 0.088):
         #divider factor is R2/(R1+R2)
         #return (val/pow(2, bits))*(voltage/dividerFactor)
-	#return ((val/1024) * (5.0/0.088))
+        #return ((val/1024) * (5.0/0.088))
         voltages = []
         #divider factor is R2/(R1+R2)
         for val in readings:
             voltages += [(val/pow(2, bits))*(voltage/dividerFactor)]
-	return voltages
+        return voltages
 
 def showSupplys():
-                 supplyVoltagesUnpowered = []
+    supplyVoltagesUnpowered = []
 
-		 time.sleep(0.1)
-                 print testProcessor.supplyNames
-                 for pin in supplyPins:
-                     supplyVoltagesUnpowered += analog2volt(controller.analogRead(pin))
-                 print supplyVoltagesUnpowered
+    time.sleep(0.1)
+    print testProcessor.supplyNames
+    for pin in supplyPins:
+        supplyVoltagesUnpowered += analog2volt(controller.analogRead(pin))
+    print supplyVoltagesUnpowered
 
 def clamp():
                  #controller.home(rate = 4000, wait = False)
@@ -186,11 +197,18 @@ def home():
                  print "Homing!!!!!!!"
                  controller.home(rate = homingRate, wait = True)
                  controller.runSteppers(frequency = clampingRate, steps = 300,direction = controller.UP, wait = False)
-def powerOn():
+def powerOn_OLD():
                  controller.pinHigh(powerPin)
                  controller.pinHigh(relayBedMotorsPin)
                  return controller.pinHigh(relayLogicPin)
+
+def powerOn():
+                 psu.on()
+
 def powerOff():
+                 psu.off()
+
+def powerOff_OLD():
                  controller.pinLow(powerPin)
                  #controller.pinLow(relayBedMotorsPin)
                  #controller.pinLow(relayLogicPin)
@@ -202,9 +220,7 @@ def smpsOn():
 def smpsOff():
                  controller.pinHigh(9)
 
-def isOverCurrent(threshold):
-                 if not overCurrentChecking: 
-                     return False
+def readCurrent():
                  adcReadings = []
 
                  time.sleep(0.1)
@@ -212,11 +228,28 @@ def isOverCurrent(threshold):
                       controller.analogRead(1)
                  for count in range(20):
                       adcReadings += controller.analogRead(1)
-                 meanAmps = round(sum(adcReadings)/len(adcReadings) * (5.0/1024.0),4)
-                 print colored("current_reading: " + str(meanAmps) + " Amps",'blue')
-                 currentReadings.append(meanAmps)
+                 return round(sum(adcReadings)/len(adcReadings) * (5.0/1024.0),4)
 
-                 if(meanAmps > threshold):
+def read_psu_current():
+                psu.sendquery(b"IOUT?")
+                time.sleep(0.5)
+                value_amps = psu.readValue().strip()
+                try:
+                    value_amps = float(value_amps)
+                except:
+                    sys.stdout.write("ERROR reading value from PSU...\n")
+                    return -1
+                return value_amps
+
+def isOverCurrent(threshold):
+                 if not overCurrentChecking: 
+                     return False
+
+                 amps = read_psu_current() #readCurrent()
+
+                 currentReadings.append(amps)
+
+                 if(amps > threshold):
                      powerOff()
                      testProcessor.errors += "Over " + str(threshold) + " amps\n"
                      print colored("Board is OVER MAXIMUM current threshold: " + str(threshold),'red')
@@ -248,11 +281,11 @@ def programBootloaders():
         #usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
         #usbfw = '/home/ultimachine/Prusa-usbserial.hex'
         #bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + usbfw + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
-        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + board.firmware32u2 + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
+        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + board.firmware32u2 + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0xCF:m'
 
         #bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
         #bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
-        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:' + board.bootloader2560 + ':i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
+        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:' + board.bootloader2560 + ':i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0xCF:m'
         bootloader32u2 = subprocess.Popen( shlex.split( bootcmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader32u2.wait()
@@ -283,8 +316,8 @@ def programBootloaders():
                 #state = "board fail"
                 #continue
 
-        fusescmd32u2 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -Uefuse:v:0xF4:m -Uhfuse:v:0xD9:m -Ulfuse:v:0xEF:m -Ulock:v:0x0F:m'
-        fusescmd2560 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m -Ulock:v:0x0F:m'
+        fusescmd32u2 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -Uefuse:v:0xF4:m -Uhfuse:v:0xD9:m -Ulfuse:v:0xEF:m -Ulock:v:0xCF:m'
+        fusescmd2560 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m -Ulock:v:0xCF:m'
         verifyfuses32u2 = subprocess.Popen( shlex.split( fusescmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
         verifyfuses2560 = subprocess.Popen( shlex.split( fusescmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
         verifyfuses32u2.wait()
@@ -723,6 +756,44 @@ while(testing):
                     print "Boot Only Mode ENABLED"
                     bootloadOnlyMode = True
                 continue
+            if serialNumber == "psu":
+                psu.open()
+                continue
+            if serialNumber == "pc":
+                psu.close()
+                continue
+            if serialNumber == "pr":
+                psu.serial.write(b"++read eoi\n")
+                print psu.read()
+                continue
+            if serialNumber == "pi":
+                psu.sendquery(b"ID?\n") #*IDN?
+                continue
+            if serialNumber == "pv":
+                psu.showSetVoltage()
+                psu.showSetCurrent()
+                continue
+            if serialNumber == "pa":
+                sys.stdout.write( "readValue: ")
+                psu.sendquery(b"IOUT?")
+                time.sleep(0.5)
+                value_amps = psu.readValue().strip()
+                try:
+                    value_amps = float(value_amps)
+                except:
+                    sys.stdout.write("ERROR reading value from PSU\n")
+                    continue
+                sys.stdout.write( str(value_amps) + "\n" )
+                continue
+            if serialNumber == "pm":
+                psu.showMeasuredCurrent()
+                continue
+            if serialNumber == "pon":
+                psu.on()
+                continue
+            if serialNumber == "poff":
+                psu.off()
+                continue
 
             try: 
                 sNum = int(serialNumber)
@@ -851,7 +922,7 @@ while(testing):
         #verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + directory + '/stk500boot_v2_mega2560.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
 
         #verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + '/home/ultimachine/workspace/Einsy/stk500v2-prusa' + '/stk500v2-prusa.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
-        verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + board.bootloader2560 + ':i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
+        verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + board.bootloader2560 + ':i -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
         verify2560bootloader_process = subprocess.Popen( shlex.split( verify2560bootloader_cmd ) )
         if verify2560bootloader_process.wait():
                 print colored("2560 Bootloader Verification FAILED!! ",'red')
@@ -1276,4 +1347,3 @@ while(testing):
             controller.home(homingRate, wait = True)
         controller.restart()
         state = "start" 
-
