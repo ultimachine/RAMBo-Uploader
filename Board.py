@@ -11,6 +11,7 @@ from atmega import *
 from testinterface import *
 import shlex
 import time
+import os
 
 class Board:
   global triggerPin
@@ -31,6 +32,8 @@ class Board:
     self.vrefPins = []
     self.controller = TestInterface()
     self.target = TestInterface()
+    self.directory = os.path.split(os.path.realpath(__file__))[0]
+    self.workspace = os.path.realpath(self.directory + '/..')
 
   '''
     A function that initializes a testProcessor object
@@ -164,9 +167,9 @@ class MiniRambo(Board):
 class EinsyRambo(MiniRambo):
   def __init__(self):
     MiniRambo.__init__(self)
-    self.testFirmwarePath = "/home/ultimachine/workspace/Einsy1.1/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
+    self.testFirmwarePath = self.workspace + "/Einsy1.1/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
     #self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/PrusaFirmware.einsy.hex"
-    self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
+    self.vendorFirmwarePath = self.workspace + "/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
     self.setVendorFirmware()
     self.setTestFirmware()
     self.testjig = "einsyrambo"
@@ -186,12 +189,13 @@ class PrusaEinsy(EinsyRambo):
     EinsyRambo.__init__(self)
     #self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/PrusaFirmware.einsy.hex"
     #self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
-    self.vendorFirmwarePath = "/home/ultimachine/Arduino/Blink/Blink.ino.rambo.hex"
+    self.vendorFirmwarePath = self.workspace + "/Blink/Blink.ino.rambo.hex"
     self.setVendorFirmware()
     #self.firmware32u2 = "/home/ultimachine/Prusa-usbserial-DFU.hex"
-    self.firmware32u2 = "/home/ultimachine/workspace/Einsy/PrusaBootloaders/Prusa-m32u2-DFU.hex"
+    self.firmware32u2 = self.workspace + "/Einsy/PrusaBootloaders/Prusa-m32u2-DFU.hex"
     #self.bootloader2560 = "/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex"
-    self.bootloader2560 = "/home/ultimachine/workspace/Einsy/PrusaBootloaders/stk500boot_v2_mega2560.hex"
+    self.bootloader2560 = self.workspace + "/Einsy/PrusaBootloaders/stk500boot_v2_mega2560.hex"
+    self.targetVref = 255
 
 class UltimachineEinsy(EinsyRambo):
   def __init__(self):
