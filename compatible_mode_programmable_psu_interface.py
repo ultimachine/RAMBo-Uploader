@@ -37,11 +37,13 @@ class CompatProgrammablePSU():
         self.serial.flushOutput()
         self.serial.flushInput()
 
-        self.sendquery(b'ID?\n')
+        #self.sendquery(b'++auto 0')
+        #self.sendquery(b'++addr 5')
+        self.sendquery(b'ID?')
 
         self.watchPuppy.startWatching(timeout = 2)
         while self.serial.inWaiting() == 0:
-            time.sleep(1.1)
+            time.sleep(2.1)
             if self.watchPuppy.timedOut(): 
                 print "Could not initialize PSU communication!"
                 return False
@@ -74,7 +76,7 @@ class CompatProgrammablePSU():
         #:OUTPUT:OVP:VALUE 25
         #:OUTPUT:OVP ON
         self.sendline(b'VSET 24') #:APPLY CH1,24,2
-        self.sendline(b'ISET 1.6') #:APPLY CH1,24,2
+        self.sendline(b'ISET 2.0') #:APPLY CH1,24,2
 
     def on(self): #psu ON
         print("set psu on.")

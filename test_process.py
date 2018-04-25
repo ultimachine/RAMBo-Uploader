@@ -115,6 +115,7 @@ controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5553933393735151A2A1-if00"] #10059735 Backup Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55533343837351102242-if00"] #10059099 Bench/Archim Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_75530313331351713281-if00"] #Einsy Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5553933393735141E1E1-if00"] #Einsy Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_75530313231351E070B1-if00"] #Einsy Controller
 
 for item in controllerPorts:
@@ -277,11 +278,14 @@ def beep():
                     call(["beep","-f 2250"])
 
 def programBootloaders():
+        #icsp_uid_32u2 = "000200172397"
+        icsp_uid_32u2 = "000203212345"
+        #icsp_uid_32u2 = "000200312345"
         time.sleep(1) #2560 AVR ICSP is powered by the board and needs more time to be recognized by the linux computer.
         #usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
         #usbfw = '/home/ultimachine/Prusa-usbserial.hex'
         #bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + usbfw + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
-        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + board.firmware32u2 + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0xCF:m'
+        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:' + icsp_uid_32u2 +  ' -c avrispmkII -e -Uflash:w:' + board.firmware32u2 + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0xCF:m'
 
         #bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
         #bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
@@ -316,7 +320,7 @@ def programBootloaders():
                 #state = "board fail"
                 #continue
 
-        fusescmd32u2 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -Uefuse:v:0xF4:m -Uhfuse:v:0xD9:m -Ulfuse:v:0xEF:m -Ulock:v:0xCF:m'
+        fusescmd32u2 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:' + icsp_uid_32u2 +  ' -c avrispmkII -Uefuse:v:0xF4:m -Uhfuse:v:0xD9:m -Ulfuse:v:0xEF:m -Ulock:v:0xCF:m'
         fusescmd2560 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m -Ulock:v:0xCF:m'
         verifyfuses32u2 = subprocess.Popen( shlex.split( fusescmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
         verifyfuses2560 = subprocess.Popen( shlex.split( fusescmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
@@ -704,18 +708,32 @@ while(testing):
                  continue
             if serialNumber == "eh":
                 ehresults = []
+                if board.testjig == "einsyretro":
+                    target.pinLow(53) #Drive SDCard Chip Select low to test the MISO buffer. The miso buffers enable pin is connected to SDSS
+                if board.testjig == "einsyrambo":
+                    target.pinLow(77) #Drive SDCard Chip Select low to test the MISO buffer. The miso buffers enable pin is connected to SDSS
 		print "Testing endstops high..."
 		for pin in board.endstopOutPins:
 		    passed = controller.pinHigh(pin)
 		for pin in board.endstopInPins:
 		    ehresults += target.pullupReadPin(pin)
-		if -1 in testProcessor.endstopHigh or not passed:
+		if -1 in testProcessor.endstopHigh:
 		    print "Reading endstops failed."
-                print "names: " + str(["X min", "Y min", "Z min", "X max", "Y max", "Z max"])
-                print "results: " + str(ehresults)
+                print "names: " + str(testProcessor.endstopNames)
+                print "endstops high results: " + str(ehresults)
                 continue
-            if serialNumber == "dh":
-                dhresults = []
+            if serialNumber == "el":
+                print "Testing endstops low..."
+                ehresults=[]
+                for pin in board.endstopOutPins:
+                    controller.pinLow(pin)
+                for pin in board.endstopInPins:
+                    ehresults += target.readPin(pin)
+                if -1 in testProcessor.endstopLow:
+                    print "Reading endstops failed."
+                print "names: " + str(testProcessor.endstopNames)
+                print "endstops low results: " + str(ehresults)
+                continue
 		print "Testing diag pins high..."
                 target.set_trinamic_diag_mode(2)
 		for pin in board.diagPins:
@@ -794,7 +812,30 @@ while(testing):
             if serialNumber == "poff":
                 psu.off()
                 continue
-
+            if serialNumber == "mh":
+                print "Testing MOSFETs high..."
+                passed = True
+                readings = []
+                for pin in board.mosfetOutPins:
+                    passed &= target.pinHigh(pin)
+                for pin in board.mosfetInPins:
+                    readings += controller.pullupReadPin(pin)
+                if -1 in testProcessor.mosfetHigh or not passed:
+                    print "Reading mosfets failed."
+                print "mosfets high: " + str(readings)
+                continue
+            if serialNumber == "ml":
+                print "Testing MOSFETs low..."
+                passed = True
+                readings = []
+                for pin in board.mosfetOutPins:
+                    passed &= target.pinLow(pin)
+                for pin in board.mosfetInPins:
+                    readings += controller.pullupReadPin(pin)
+                if -1 in testProcessor.mosfetLow or not passed:
+                    print "Reading mosfets failed."
+                print "mosfets low: " + str(readings)
+                continue
             try: 
                 sNum = int(serialNumber)
                 if(  (sNum in range(10000000,10199000))  or  (sNum in range(55500000,55555555)) or  (sNum in range(20000000,20100000))): 

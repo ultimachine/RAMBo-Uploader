@@ -33,15 +33,16 @@ class TestInterface():
         self.serial.open()
         self.serial.flushOutput()
         self.serial.flushInput()
-        self.serial.setDTR(0)
-        time.sleep(1)
-        self.serial.setDTR(1)
+        #self.serial.setDTR(0)
+        #time.sleep(1)
+        #self.serial.setDTR(1)
         
         self.watchPuppy.startWatching(timeout = 2)
         while self.serial.inWaiting() == 0:
             time.sleep(0.1)
             if self.watchPuppy.timedOut(): 
                 print "Could not initialize serial communication!"
+                self.serial.close()
                 return False
         time.sleep(1)
         print "Successfully connected to " + self.serial.port + " at " \

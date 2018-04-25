@@ -130,7 +130,7 @@ class MiniRambo(Board):
     self.vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Mini-Rambo-Marlin/Marlin.cpp.hex"
     #self.vrefPins = [6, 5, 4,] #x, y, z, e0, e1 on controller
     #self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]
-    self.mosfetOutPins = [3, 6, 8, 4] #On target
+    self.mosfetOutPins = [3, 6, 8, 4] #On target   CTRL=[44, 32, 45, 31, 46, 30]
     self.mosfetInPins = [44, 45, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
     #self.endstopNames = ["X min", "Y min", "Z min", "X max", "Y max", "Z max"]
     self.endstopOutPins = [83, 82, 81, 80, 79, 78] #controller outputs
@@ -175,7 +175,8 @@ class EinsyRambo(MiniRambo):
     self.testjig = "einsyrambo"
     self.thresholdCurrent = 0.085
     self.thermistorPins = [0, 1, 2, 3, 6]
-    self.endstopOutPins = [83, 82, 81, 78 ] #80 #controller outputs
+    #self.endstopOutPins = [83, 82, 81, 78 ] #80 #controller outputs
+    self.endstopOutPins = [78, 79, 80, 81 ] #controller outputs
     self.endstopInPins = [12, 11, 10, 50 ] #target inputs XMIN YMIN ZPROBE MISO
     self.testProcessor.endstopNames = ["X min", "Y min", "Z probe", "MISObuf"]
     self.testProcessor.thermistorNames = ["T0","T1","T2","ZTHERM","BTHERM"]
@@ -218,18 +219,20 @@ class UltiEinsyPrusaFirmware(EinsyRambo):
 class EinsyRetro(EinsyRambo):
   def __init__(self):
     EinsyRambo.__init__(self)
-    self.vendorFirmwarePath = "/home/ultimachine/workspace/EinsyRetro/Marlin/Marlin/Marlin.ino.rambo.hex"
+    #self.vendorFirmwarePath = self.workspace + "/Blink/Blink.ino.rambo.hex"
+    self.vendorFirmwarePath = self.workspace + "/EinsyRetro/Marlin/Marlin/Marlin.ino.rambo.hex"
     self.setVendorFirmware()
-    self.firmware32u2 = "/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX"
-    self.bootloader2560 = "/home/ultimachine/workspace/RAMBo-Uploader/stk500boot_v2_mega2560.hex"
+    self.firmware32u2 = self.directory + "/fw/RAMBo-usbserial-DFU-combined-32u2.HEX"
+    self.bootloader2560 = self.directory + "/stk500boot_v2_mega2560.hex"
 
-    self.testFirmwarePath = "/home/ultimachine/workspace/EinsyRetro/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
+    self.testFirmwarePath = self.workspace + "/EinsyRetro/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
     self.setTestFirmware()
     self.targetVref = 135
 
-    self.thermistorPins = [0, 1, 2, 6] #Remove Analog Input 3 (was ztherm) for EinsyRetro
+    self.thermistorPins = [0, 1, 2, 6]
     self.testProcessor.thermistorNames = ["T0","T1","T2","BTHERM"] #remove ZTHERM
-    self.endstopOutPins = [83, 82, 81, 79, 78 ] #controller outputs, #add back YMAX controller pin
+    #self.endstopOutPins = [83, 82, 81, 79, 78 ] #controller outputs, #add back YMAX controller pin
+    self.endstopOutPins = [78, 79, 80, 82, 81 ] #controller outputs
     self.endstopInPins = [12, 11, 10, 57, 50 ] #target inputs, #add YMAX back (prev ZTHERM) #81, 57, 7
     self.testProcessor.endstopNames = ["X min", "Y min", "Z min", "Y max", "MISObuf"] #"X max", "Z max"
 
