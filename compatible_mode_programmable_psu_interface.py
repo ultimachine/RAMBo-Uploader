@@ -43,7 +43,7 @@ class CompatProgrammablePSU():
 
         self.watchPuppy.startWatching(timeout = 2)
         while self.serial.inWaiting() == 0:
-            time.sleep(2.1)
+            time.sleep(1.1)
             if self.watchPuppy.timedOut(): 
                 print "Could not initialize PSU communication!"
                 return False

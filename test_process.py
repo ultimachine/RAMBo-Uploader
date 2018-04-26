@@ -139,7 +139,7 @@ psu = CompatProgrammablePSU()
 #psu = ProgrammablePSU()
 #psu = DirectPSU()
 psu.controller = controller
-psu.open()
+psu.open(port = "/dev/serial/by-id/usb-Prologix_Prologix_GPIB-USB_Controller_PX9LUIO9-if00-port0")
 
 #Setup up avrdude config for upload to an Arduino.
 avrdude = Avrdude()
@@ -285,14 +285,14 @@ def programBootloaders():
         #usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
         #usbfw = '/home/ultimachine/Prusa-usbserial.hex'
         #bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:000203212345 -c avrispmkII -e -Uflash:w:' + usbfw + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0x0F:m'
-        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p atmega32u2 -P usb:' + icsp_uid_32u2 +  ' -c avrispmkII -e -Uflash:w:' + board.firmware32u2 + ':i -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0xCF:m'
+        bootcmd32u2 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -p atmega32u2 -P usb:' + icsp_uid_32u2 +  ' -c avrispmkII -e -Uefuse:w:0xF4:m -Uhfuse:w:0xD9:m -Ulfuse:w:0xEF:m -Ulock:w:0xCF:m -Uflash:w:' + board.firmware32u2 + ':i'
 
         #bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/RAMBo/bootloaders/stk500boot_v2_mega2560.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
         #bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex:i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
-        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:' + board.bootloader2560 + ':i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0xCF:m'
+        bootcmd2560 = '/usr/bin/timeout 10 /usr/bin/avrdude -s -v -v -V -p m2560      -P usb:000200212345 -c avrispmkII -e -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0xCF:m -Uflash:w:' + board.bootloader2560 + ':i'
         bootloader32u2 = subprocess.Popen( shlex.split( bootcmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
-        bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader32u2.wait()
+        bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader2560.wait()
 
         logmsg=serialNumber + " "
@@ -323,8 +323,8 @@ def programBootloaders():
         fusescmd32u2 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p atmega32u2 -P usb:' + icsp_uid_32u2 +  ' -c avrispmkII -Uefuse:v:0xF4:m -Uhfuse:v:0xD9:m -Ulfuse:v:0xEF:m -Ulock:v:0xCF:m'
         fusescmd2560 = '/usr/bin/timeout 6 /usr/bin/avrdude -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m -Ulock:v:0xCF:m'
         verifyfuses32u2 = subprocess.Popen( shlex.split( fusescmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
-        verifyfuses2560 = subprocess.Popen( shlex.split( fusescmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
         verifyfuses32u2.wait()
+        verifyfuses2560 = subprocess.Popen( shlex.split( fusescmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE )
         verifyfuses2560.wait()
 
         if verifyfuses2560.returncode:
