@@ -212,7 +212,8 @@ class TestInterface():
             vals = self._groupn(map(int,re.findall(r'\b\d+\b', self.output)), groups)
         else:
             vals = map(int,re.findall(r'\b\d+\b', self.output))  
-        print( colored(self.output,self.responseColor,attrs=self.responseAttrs) )
+        if self.debugmode:
+            print( colored(self.output,self.responseColor,attrs=self.responseAttrs) )
         self.output = ""
         self.read()
         return vals
