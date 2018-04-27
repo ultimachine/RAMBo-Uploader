@@ -135,6 +135,17 @@ if not controller.open(port = controllerPort):
     print "Check controller connection."
     sys.exit(0)
 
+print( colored('dbg controller serial write color', controller.writeColor, attrs=controller.writeAttrs) )
+
+print( colored('dbg controller seral response color', controller.responseColor, attrs=controller.responseAttrs) )
+
+target.writeAttrs = ['bold']
+print( colored('dbg target serial write color', target.writeColor, attrs=target.writeAttrs) )
+
+target.responseAttrs = ['bold']
+print( colored('dbg target seral response color', target.responseColor, attrs=target.responseAttrs) )
+
+
 psu = CompatProgrammablePSU()
 #psu = ProgrammablePSU()
 #psu = DirectPSU()
@@ -784,8 +795,12 @@ while(testing):
                 psu.serial.write(b"++read eoi\n")
                 print psu.read()
                 continue
+            if serialNumber == "w":
+                print "psu read:"
+                print psu.read()
+                continue
             if serialNumber == "pi":
-                psu.sendquery(b"ID?\n") #*IDN?
+                psu.sendquery(b"ID?") #*IDN?
                 continue
             if serialNumber == "pv":
                 psu.showSetVoltage()
@@ -802,6 +817,31 @@ while(testing):
                     sys.stdout.write("ERROR reading value from PSU\n")
                     continue
                 sys.stdout.write( str(value_amps) + "\n" )
+                continue
+            if serialNumber == "q":
+                psu.sendquery(b"STS?")
+                sys.stdout.write("STS?: ")
+                #time.sleep(0.2)
+                #psu.serial.write(b"++read eoi\n")
+                #time.sleep(0.2)
+                #time.sleep(0.1)
+                #print psu.read().strip()
+                print colored(psu.read().strip(),'blue',attrs=['bold'])
+                continue
+            if serialNumber == "sts":
+                sys.stdout.write( "psu status: ")
+                psu.sendquery(b"STS?")
+                time.sleep(0.5)
+                value_status = psu.readValue() #.strip()
+                try:
+                    value_status = float(value_amps)
+                except:
+                    sys.stdout.write("ERROR reading value from PSU\n")
+                    continue
+                sys.stdout.write( str(value_status) + "\n" )
+                continue
+            if serialNumber == "st":
+                psu.showStatus()
                 continue
             if serialNumber == "pm":
                 psu.showMeasuredCurrent()
@@ -988,7 +1028,8 @@ while(testing):
     elif state == "connecting target":
         print "Attempting connect..."   
         if target.open(port = targetPort):
-            state = "spiflashid"
+            state = "mosfet high"
+            #state = "spiflashid"
             #state = "mosfet high"
 #            state = "wait for homing"
         else:
@@ -1160,7 +1201,8 @@ while(testing):
 
 
     elif state == "spiflashid":
-        state = "mosfet high"
+        #state = "mosfet high"
+        state = "program marlin"
         if board.testjig not in ["archim","einsyrambo"]: continue
         print "Testing SPI FLASH Chip by reading the ID..."
         testProcessor.spiflashid = target.initSpiflash()
@@ -1194,6 +1236,7 @@ while(testing):
             passed &= target.pinHigh(pin)
         for pin in board.mosfetInPins:
             testProcessor.mosfetHigh += controller.pullupReadPin(pin)
+            
         if -1 in testProcessor.mosfetHigh or not passed:
             print "Reading mosfets failed."
             state = "board fail"      
@@ -1264,7 +1307,8 @@ while(testing):
             print "Reading thermistors failed."
             state = "board fail"
         else:
-            state = "program marlin"
+            #state = "program marlin"
+            state = "spiflashid"
             if isOverCurrent(board.motorEnabledThresholdCurrent): state = "board fail"
             targetMotorsDisable()
             time.sleep(1.5)

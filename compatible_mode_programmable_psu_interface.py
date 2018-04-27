@@ -68,6 +68,11 @@ class CompatProgrammablePSU():
         self.sendquery(b'IOUT?')
         print colored(self.readValue(),'blue',attrs=['bold'])
 
+    def showStatus(self): #show measured current
+        sys.stdout.write("STS?: ")
+        self.sendquery(b'STS?')
+        print colored(self.read().strip(),'blue',attrs=['bold'])
+
     def program_psu_settings(self): #comments show SCPI commands
         self.sendline(b'OUT 0') #:OUTPUT OFF
         self.sendline(b'RST') #:SOURCE:CURRENT:PROTECTION:CLEAR
@@ -82,7 +87,8 @@ class CompatProgrammablePSU():
         print("set psu on.")
         self.program_psu_settings()
         self.sendline(b'OUT 1') #:OUTPUT ON
-        time.sleep(0.2)
+        time.sleep(1) #0.2
+        self.showStatus();
 
 
     def off(self): #psu OFF
@@ -92,13 +98,15 @@ class CompatProgrammablePSU():
     def sendline(self,cmd):
         self.serial.flushInput()
         self.serial.write(cmd + '\n')
-        time.sleep(0.1)
+        #time.sleep(0.2)
 
     def sendquery(self,cmd):
         self.serial.flushInput()
         self.serial.write(cmd + '\n')
         time.sleep(0.1)
-        self.serial.write("++read eoi" + '\n')
+        #self.serial.write("++read eoi" + '\n')
+        self.serial.write(b"++read eoi\n")
+        time.sleep(0.2)
 
     def close(self):
         if self.serial.port is not None:
@@ -106,7 +114,7 @@ class CompatProgrammablePSU():
         return True
 
     def readValue(self):
-        if self.waitForFinish(timeout = 0.5):
+        if self.waitForFinish(timeout = 1): #0.5
             return self.read()
         else: 
             return -1
