@@ -38,7 +38,7 @@ class CompatProgrammablePSU():
         self.serial.flushInput()
 
         #self.sendquery(b'++auto 0')
-        #self.sendquery(b'++addr 5')
+        self.sendquery(b'++addr 5')
         self.sendquery(b'ID?')
 
         self.watchPuppy.startWatching(timeout = 2)
