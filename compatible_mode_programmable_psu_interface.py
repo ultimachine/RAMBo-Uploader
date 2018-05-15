@@ -28,16 +28,18 @@ class CompatProgrammablePSU():
     def open(self, port = "/dev/ttyUSB0"):
         if not os.path.exists(port):
             print "Serial port not detected!"
-            listports()
-            while(1):
-                time.sleep(1)
+            print " port=" + str(port)
+            #listports()
+            #while(1):
+            #    time.sleep(1)
             return False
         self.serial.port = port
         self.serial.open()
         self.serial.flushOutput()
         self.serial.flushInput()
 
-        #self.sendquery(b'++auto 0')
+        self.sendquery(b'++eot_enable 0')
+        self.sendquery(b'++auto 0')
         self.sendquery(b'++addr 5')
         self.sendquery(b'ID?')
 

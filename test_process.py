@@ -145,12 +145,18 @@ print( colored('dbg target serial write color', target.writeColor, attrs=target.
 target.responseAttrs = ['bold']
 print( colored('dbg target seral response color', target.responseColor, attrs=target.responseAttrs) )
 
+psuPorts  = ["/dev/serial/by-id/usb-Prologix_Prologix_GPIB-USB_Controller_PX9LUIO9-if00-port0"]
+#psuPorts += ["/dev/serial/by-id/usb-Prologix_Prologix_GPIB-USB_Controller_PX2CJNJB-if00-port0"]
+psuPort = "/dev/ttyUSB0"
+
+for item in psuPorts:
+    if os.path.exists(item): psuPort = item
 
 psu = CompatProgrammablePSU()
 #psu = ProgrammablePSU()
 #psu = DirectPSU()
 psu.controller = controller
-psu.open(port = "/dev/serial/by-id/usb-Prologix_Prologix_GPIB-USB_Controller_PX9LUIO9-if00-port0")
+psu.open(port = psuPort)
 
 #Setup up avrdude config for upload to an Arduino.
 avrdude = Avrdude()
