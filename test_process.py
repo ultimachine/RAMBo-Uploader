@@ -1254,7 +1254,7 @@ while(testing):
             continue
 
     elif state == "i2c floating":
-        state = "spiflashid"
+        state = "mosfet high"
         passed = True
         ehresults = []
 	print "Testing i2c pins low..."
