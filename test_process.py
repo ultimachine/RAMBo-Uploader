@@ -683,6 +683,21 @@ while(testing):
                 print "names: " + str(["X min", "Y min", "Z min", "X max", "Y max", "Z max"])
                 print "results: " + str(ehresults)
                 continue
+            if serialNumber == "i2c":
+                ehresults = []
+		print "Testing i2c pins low..."
+		for pin in board.I2CPins:
+                    passed = target.pinLow(pin)
+                    time.sleep(0.01)
+                    ehresults += target.readPin(pin)
+                    target.pullupReadPin(pin)
+                print "names: " + str(["SDA", "SCL"])
+                print "results: " + str(ehresults)
+		if -1 in testProcessor.endstopHigh or not passed:
+		    print "Reading i2c pins failed."
+                if ehresults != [0,0]:
+                    print "I2C Pullup Test Failed (not [0,0]). Stopping Test."
+                continue
             if serialNumber == "dh":
                 dhresults = []
 		print "Testing diag pins high..."
@@ -878,7 +893,7 @@ while(testing):
     elif state == "connecting target":
         print "Attempting connect..."   
         if target.open(port = targetPort):
-            state = "spiflashid"
+            state = "i2c floating"
             #state = "mosfet high"
 #            state = "wait for homing"
         else:
@@ -1076,6 +1091,26 @@ while(testing):
             print "Reading SDCARD failed."
             state = "board fail"
             continue
+
+    elif state == "i2c floating":
+        state = "spiflashid"
+        passed = True
+        ehresults = []
+	print "Testing i2c pins low..."
+	for pin in board.I2CPins:
+            passed = target.pinLow(pin)
+            time.sleep(0.01)
+            ehresults += target.readPin(pin)
+            target.pullupReadPin(pin)
+        print "names: " + str(["SDA", "SCL"])
+        print "results: " + str(ehresults)
+	if -1 in ehresults or not passed:
+	    print "Reading i2c pins failed."
+            state = "board fail"  
+        if ehresults != [0,0]:
+            print "I2C Pullup Test Failed (not [0,0]). Stopping Test."
+            testProcessor.errors += "Check I2C"
+            state = "board fail"
 
     elif state == "mosfet high":
         passed = True
