@@ -184,6 +184,7 @@ class EinsyRambo(MiniRambo):
     self.diagPins = [64, 69, 68, 65] # X, Y, Z, E0
     self.diagPinNames = ['X diag','Y diag','Z diag','E diag']
     self.targetVref = 255
+    self.I2CPins = [20, 21] #SDA SCL
 
 class PrusaEinsy(EinsyRambo):
   def __init__(self):
