@@ -971,7 +971,7 @@ while(testing):
         if board.testjig == "archim":
             state = "program for test"
             continue
-        state = "iserialcheck"
+        state = "program marlin"
 
         if btldrState==True:
             print "Uploading Bootloader and setting fuses..."
@@ -983,6 +983,7 @@ while(testing):
                 print colored("Trying to program bootloaders again..",'yellow')
                 if programBootloaders():
                     state = "board fail"
+        time.sleep(1)
 
     elif state == "iserialcheck":
         state = "program for test"
