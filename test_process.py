@@ -1302,7 +1302,7 @@ while(testing):
         powerOff()
         print "Writing results to database..."
         #cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote ))
-        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch, iserial, testjig, productionRunId) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch, iserial, board.testjig, orderRunId ))
+        cursor.execute("""INSERT INTO testdata(serial, timestamp, testresults, testversion, testdetails, failure_code, failure_notes, wave_operator, qc, tester, amps, gitdiff, gitbranch, iserial, testjig, productionRunId, bootloader2560_filename, bootloader32u2_filename, board ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (serialNumber, 'now', testProcessor.errors, version, str(testProcessor.resultsDictionary()), failCode, failNote, waveOperator, qcPerson, testPerson, str(currentReadings), gitdiff, gitbranch, iserial, board.testjig, orderRunId, board.bootloader2560, board.firmware32u2, sys.argv[2] ))
 	count = get_count_for_runid(orderRunId)
 	cursor.execute("""UPDATE productionruns SET endqty=%s WHERE productionrunid=%s""",(count ,orderRunId))
         testStorage.commit()
