@@ -15,6 +15,10 @@ def listports():
 	print(' '.join( glob.glob("/dev/ttyACM[0-9]") )) #effectively 'ls /dev/ttyACM*'
 
 class CompatProgrammablePSU():
+    def __init__(self):
+        self.status = ""
+        self.retry_count = 0
+
     """A class to abstract away serial handling and communication with a prorgrammable PSU.""" 
     def __init__(self):
         self.serial = serial.Serial(port = None, baudrate = 9600)
@@ -73,7 +77,8 @@ class CompatProgrammablePSU():
     def showStatus(self): #show measured current
         sys.stdout.write("STS?: ")
         self.sendquery(b'STS?')
-        print colored(self.read().strip(),'blue',attrs=['bold'])
+        self.status = self.read().strip()
+        print colored(self.status,'blue',attrs=['bold'])
 
     def program_psu_settings(self): #comments show SCPI commands
         self.sendline(b'OUT 0') #:OUTPUT OFF
@@ -91,10 +96,15 @@ class CompatProgrammablePSU():
         self.sendline(b'OUT 1') #:OUTPUT ON
         time.sleep(1) #0.2
         self.showStatus();
+        
+        if(self.status == "1216" and self.retry_count < 2):
+                self.retry_count = self.retry_count + 1
+                self.on()
 
 
     def off(self): #psu OFF
         print("set psu off.")
+        self.retry_count = 0
         self.sendline(b'OUT 0') #:OUTPUT OFF
 
     def sendline(self,cmd):
