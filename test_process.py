@@ -604,6 +604,12 @@ while(testing):
 
             try: 
                 sNum = int(serialNumber)
+                if sNum in range(10167292,10167401) :
+                    print "This board might have bad capacitors. Please set aside."
+                    print "This board might have bad capacitors. Please set aside."
+                    call(["beep","-f 2250"])
+                    continue
+
                 if(  (sNum in range(10000000,10199000))  or  (sNum in range(55500000,55555555)) or (sNum in range(20000000,20099000))):
                     break
                 else:
