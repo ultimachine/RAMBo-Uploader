@@ -633,7 +633,7 @@ while(testing):
         state = board.setState()
 
         iserial = board.setISerial(targetPort)
-        if not btldrState and iserial == 0  and len(sys.argv) >= 4:
+        if btldrState == True and iserial == 0  and len(sys.argv) >= 4:
             state = "start"
             continue
 
