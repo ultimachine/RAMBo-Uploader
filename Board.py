@@ -89,8 +89,8 @@ class Rambo(Board):
     Board.__init__(self)
 
     self.triggerPin = 3
-    self.testFirmwarePath = "/home/ultimachine/workspace/Test_Jig_Firmware/target_test_firmware.hex"
-    self.vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Marlinth2.hex"
+    self.testFirmwarePath = self.workspace + "/Test_Jig_Firmware/target_test_firmware.hex"
+    self.vendorFirmwarePath = self.workspace + "/johnnyr/Marlinth2.hex"
     self.vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
     #self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]
     self.mosfetOutPins = [9, 8, 7, 6, 3, 2] #On target
@@ -126,8 +126,8 @@ class MiniRambo(Board):
     self.vrefPins = []
 
     self.triggerPin = 4
-    self.testFirmwarePath = "/home/ultimachine/workspace/MiniRamboTestJigFirmware/target_test_firmware.hex"
-    self.vendorFirmwarePath = "/home/ultimachine/workspace/johnnyr/Mini-Rambo-Marlin/Marlin.cpp.hex"
+    self.testFirmwarePath = self.workspace + "/MiniRamboTestJigFirmware/target_test_firmware.hex"
+    self.vendorFirmwarePath = self.workspace + "/johnnyr/Mini-Rambo-Marlin/Marlin.cpp.hex"
     #self.vrefPins = [6, 5, 4,] #x, y, z, e0, e1 on controller
     #self.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Fan0","Heat0"]
     self.mosfetOutPins = [3, 6, 8, 4] #On target   CTRL=[44, 32, 45, 31, 46, 30]
@@ -168,7 +168,7 @@ class EinsyRambo(MiniRambo):
   def __init__(self):
     MiniRambo.__init__(self)
     self.testFirmwarePath = self.workspace + "/Einsy1.1/Test_Jig_Firmware/Test_Jig_Firmware.ino.rambo.hex"
-    #self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/PrusaFirmware.einsy.hex"
+    #self.vendorFirmwarePath = self.workspace + "/RAMBo-Uploader/PrusaFirmware.einsy.hex"
     self.vendorFirmwarePath = self.workspace + "/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
     self.setVendorFirmware()
     self.setTestFirmware()
@@ -189,33 +189,33 @@ class EinsyRambo(MiniRambo):
 class PrusaEinsy(EinsyRambo):
   def __init__(self):
     EinsyRambo.__init__(self)
-    #self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/PrusaFirmware.einsy.hex"
-    #self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
+    #self.vendorFirmwarePath = self.workspace + "/RAMBo-Uploader/PrusaFirmware.einsy.hex"
+    #self.vendorFirmwarePath = self.workspace + "/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
     self.vendorFirmwarePath = self.workspace + "/Blink/Blink.ino.rambo.hex"
     self.setVendorFirmware()
     #self.firmware32u2 = "/home/ultimachine/Prusa-usbserial-DFU.hex"
     self.firmware32u2 = self.workspace + "/Einsy/PrusaBootloaders/Prusa-m32u2-DFU.hex"
-    #self.bootloader2560 = "/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex"
+    #self.bootloader2560 = self.workspace + "/Einsy/stk500v2-prusa/stk500v2-prusa.hex"
     self.bootloader2560 = self.workspace + "/Einsy/PrusaBootloaders/stk500boot_v2_mega2560.hex"
     self.targetVref = 255
 
 class UltimachineEinsy(EinsyRambo):
   def __init__(self):
     EinsyRambo.__init__(self)
-    self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
+    self.vendorFirmwarePath = self.workspace + "/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
     self.setVendorFirmware()
-    self.firmware32u2 = "/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX"
-    #self.bootloader2560 = "/home/ultimachine/workspace/RAMBo-Uploader/stk500boot_v2_mega2560.hex"
-    self.bootloader2560 = "/home/ultimachine/Downloads/stk500boot_v2_mega2560_app_end_8k.hex"
+    self.firmware32u2 = self.workspace + "/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX"
+    #self.bootloader2560 = self.workspace + "/RAMBo-Uploader/stk500boot_v2_mega2560.hex"
+    self.bootloader2560 = self.workspace + "../Downloads/stk500boot_v2_mega2560_app_end_8k.hex"
 
 class UltiEinsyPrusaFirmware(EinsyRambo):
   def __init__(self):
     EinsyRambo.__init__(self)
-    self.vendorFirmwarePath = "/home/ultimachine/Downloads/prusa3d_fw_3_1_1_rc4_b143.hex"
+    self.vendorFirmwarePath = self.workspace + "/Downloads/prusa3d_fw_3_1_1_rc4_b143.hex"
     self.setVendorFirmware()
-    self.firmware32u2 = "/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX"
-    #self.bootloader2560 = "/home/ultimachine/workspace/RAMBo-Uploader/stk500boot_v2_mega2560.hex"
-    self.bootloader2560 = "/home/ultimachine/Downloads/stk500boot_v2_mega2560_app_end_8k.hex"
+    self.firmware32u2 = self.workspace + "/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX"
+    #self.bootloader2560 = self.workspace + "/RAMBo-Uploader/stk500boot_v2_mega2560.hex"
+    self.bootloader2560 = self.workspace + "../Downloads/stk500boot_v2_mega2560_app_end_8k.hex"
 
 
 
