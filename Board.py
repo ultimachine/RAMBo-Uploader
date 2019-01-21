@@ -206,7 +206,7 @@ class UltimachineEinsy(EinsyRambo):
     self.setVendorFirmware()
     self.firmware32u2 = self.workspace + "/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX"
     #self.bootloader2560 = self.workspace + "/RAMBo-Uploader/stk500boot_v2_mega2560.hex"
-    self.bootloader2560 = self.workspace + "../Downloads/stk500boot_v2_mega2560_app_end_8k.hex"
+    self.bootloader2560 = self.workspace + "/../Downloads/stk500boot_v2_mega2560_app_end_8k.hex"
 
 class UltiEinsyPrusaFirmware(EinsyRambo):
   def __init__(self):
