@@ -36,7 +36,7 @@ class TestInterface():
         self.serial.port = port
         self.serial.open()
         self.serial.flushOutput()
-        self.serial.flushInput()
+        #self.serial.flushInput()
         #self.serial.setDTR(0)
         #time.sleep(1)
         #self.serial.setDTR(1)
