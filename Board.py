@@ -211,13 +211,23 @@ class UltimachineEinsy(EinsyRambo):
 class UltiEinsyPrusaFirmware(EinsyRambo):
   def __init__(self):
     EinsyRambo.__init__(self)
-    self.vendorFirmwarePath = self.workspace + "/Downloads/prusa3d_fw_3_1_1_rc4_b143.hex"
+    self.vendorFirmwarePath = self.workspace + "/../Downloads/prusa3d_fw_MK3_3_5_1.hex"
     self.setVendorFirmware()
     self.firmware32u2 = self.workspace + "/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX"
     #self.bootloader2560 = self.workspace + "/RAMBo-Uploader/stk500boot_v2_mega2560.hex"
     self.bootloader2560 = self.workspace + "/../Downloads/stk500boot_v2_mega2560_app_end_8k.hex"
 
-
+class EinsyPrusaMK3Firmware(EinsyRambo):
+  def __init__(self):
+    EinsyRambo.__init__(self)
+    #self.vendorFirmwarePath = "/home/ultimachine/workspace/RAMBo-Uploader/PrusaFirmware.einsy.hex"
+    #self.vendorFirmwarePath = "/home/ultimachine/workspace/Einsy/Marlin/Marlin/Marlin.ino.rambo.hex"
+    self.vendorFirmwarePath = "/../Downloads/prusa3d_fw_MK3_3_5_1.hex"
+    self.setVendorFirmware()
+    #self.firmware32u2 = "/home/ultimachine/Prusa-usbserial-DFU.hex"
+    self.firmware32u2 = "/../workspace/Einsy/PrusaBootloaders/Prusa-m32u2-DFU.hex"
+    #self.bootloader2560 = "/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex"
+    self.bootloader2560 = "/../workspace/Einsy/PrusaBootloaders/stk500boot_v2_mega2560.hex"
 
 class EinsyRetro(EinsyRambo):
   def __init__(self):
