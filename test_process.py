@@ -100,6 +100,7 @@ controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_7
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55539333937351615271-if00"] #10059679 Mini-Rambo Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5553933393735151A2A1-if00"] #10059735 Backup Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55533343837351102242-if00"] #10059099 Bench/Archim Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_75530313231351702001-if00"] #10059099 Bench/Archim Controller
 for item in controllerPorts:
     if os.path.exists(item): controllerPort = item
 
@@ -582,7 +583,12 @@ while(testing):
 
             if serialNumber == "fw":
                  print "Uploading Test Firmware!!!!!!!"
-                 avrdude.upload(board.testFirmware, timeout = 10)
+                 board.programTestFirmware()
+                 continue
+            if serialNumber == "rfw":
+                 print "Uploading Retail Firmware!!!!!!!"
+                 board.programVendorFirmware()
+                 print "board.vendorFirmwarePath: " + board.vendorFirmwarePath
                  continue
             if serialNumber == "savefw":
                  print "Enabling Save FW"

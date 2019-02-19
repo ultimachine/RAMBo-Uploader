@@ -219,6 +219,7 @@ class ArchimRambo(Board):
 
   def programVendorFirmware(self):
         #return "testamps"
+        print "self.vendorFirmwarePath: " + self.vendorFirmwarePath
         self.samba_mode()
         program_fw_cmd = 'bossac -e -w -v -b Marlin.ino.archim.bin'
         program_fw_process = subprocess.Popen( shlex.split( program_fw_cmd ) )
