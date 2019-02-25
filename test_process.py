@@ -94,6 +94,8 @@ if sys.argv[2] == "minirambo":
   board = MiniRambo()
 if sys.argv[2] == "archim":
   board = ArchimRambo()
+if sys.argv[2] == "archim2":
+  board = Archim2()
 
 controllerPorts  = ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74035323434351A00261-if00"] #10006390 Rambo Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_74034313938351C0A291-if00"] #10024352 Rambo Controller

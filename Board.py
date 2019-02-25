@@ -205,7 +205,7 @@ class ArchimRambo(Board):
   def programTestFirmware(self):
         self.samba_mode()
         subprocess.Popen( shlex.split( "lsusb -d 27b1:0001" )).wait()
-        program_testfw_cmd = 'bossac -e -w -v -b -R Test_Jig_Firmware.ino.archim.bin'
+        program_testfw_cmd = 'bossac -e -w -v -b -R ../Test_Jig_Firmware/Test_Jig_Firmware.ino.archim.bin'
         program_testfw__process = subprocess.Popen( shlex.split( program_testfw_cmd ) )
         if program_testfw__process.wait():
                 print colored("Uploading Test Firmware Failed.",'red')
@@ -221,7 +221,7 @@ class ArchimRambo(Board):
         #return "testamps"
         print "self.vendorFirmwarePath: " + self.vendorFirmwarePath
         self.samba_mode()
-        program_fw_cmd = 'bossac -e -w -v -b Marlin.ino.archim.bin'
+        program_fw_cmd = 'bossac -e -w -v -b ../Marlin4Due/Marlin/Marlin.ino.archim.bin'
         program_fw_process = subprocess.Popen( shlex.split( program_fw_cmd ) )
         if program_fw_process.wait():
                 print colored("Uploading Vendor Firmware Failed.",'red')
@@ -290,3 +290,7 @@ class ArchimRambo(Board):
 	time.sleep(1)
 	if subprocess.Popen( shlex.split( "lsusb -d 03eb:6124" )).wait(): #look for samba boot loader
 		print colored("SAMBA boot loader not found!",'red')
+
+class Archim2(ArchimRambo):
+  def __init__(self):
+    ArchimRambo.__init__(self)
