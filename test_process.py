@@ -69,7 +69,7 @@ testing = True
 state = "start"
 serialNumber = ""
 supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
-logFile = '/home/ultimachine/tplog.txt'
+logFile = directory + '/../tplog.txt'
 relayBedMotorsPin = 4
 relayBedPin = 4
 relayLogicPin = 5
@@ -612,7 +612,8 @@ while(testing):
         print "VendorFirmware:" + board.vendorFirmwarePath
 
 	#call(["cat", "~/tplog.txt | grep " + serialNumber])
-	call([directory + "/tpgrep.sh",str(serialNumber)])
+	print "directory: " + str(directory)
+	call([directory + "/../tpgrep.sh",str(serialNumber)])
         with open(logFile, "a") as tpLog:
             tpLog.write(serialNumber + '\n') 
 
@@ -1009,7 +1010,7 @@ while(testing):
 
     elif state == "processing":
         if testProcessor.verifyAllTests():
-            call(["./tpgrep.sh",serialNumber])
+            call([directory + "/../tpgrep.sh",serialNumber])
             print colored(serialNumber + " Board passed!", 'green')
             testProcessor.errors = "Passed" + testProcessor.errors
             with open(logFile, "a") as tpLog:
@@ -1017,7 +1018,7 @@ while(testing):
             state = "finished"
         else:
             powerOff()
-            call(["./tpgrep.sh",serialNumber])
+            call([directory + "/../tpgrep.sh",serialNumber])
             print colored(serialNumber + " Board failed!", 'red')
             testProcessor.errors = "Failed:" + testProcessor.errors
             with open(logFile, "a") as tpLog:
