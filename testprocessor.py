@@ -174,6 +174,7 @@ class TestProcessor():
         
         if self.supplys: #Just realized this is spelled wrong
             print "Supply voltage values..."
+            print str(self.supplyNames)
             self._analogToVoltage(readings = self.supplys)
             print self.supplyVoltages
             passed &= self.testSupplys()
