@@ -58,7 +58,7 @@ except:
 
 #Configuration
 monitorPin = 44 #PL5 on test controller
-powerPin = 3 #bed on test controller
+powerPin = 9 #3 #bed on test controller
 homingRate = 8000 #5000
 clampingRate = 7000 #4000
 clampingLength = 15980 #16200
@@ -68,13 +68,14 @@ controllerPort = None
 testing = True
 state = "start"
 serialNumber = ""
-supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
+#supplyPins = [7, 2, 0] #extruder rail, bed rail, 5v rail on controller
+supplyPins = [3, 4, 8] # Extruder Rail PF6 A6, VMOT PF5 A5,   3.3V PF3 A3,   Bed PF4 A4,   5V PK0 A8
 logFile = directory + '/../tplog.txt'
 relayBedMotorsPin = 4
 relayBedPin = 4
 relayLogicPin = 5
 relayMotorsPin = 2
-overCurrentChecking = True
+overCurrentChecking = False
 currentReadings = []
 saveFirmware = False
 btldrState = True
@@ -85,6 +86,7 @@ cursor = testStorage.cursor()
 waveOperator = None
 qcPerson = None
 testPerson = None
+debug = False
 
 targetPort = "/dev/ttyACM" + sys.argv[1]
 print "targetPort: " + targetPort
@@ -103,11 +105,19 @@ controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_5553933393735151A2A1-if00"] #10059735 Backup Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_55533343837351102242-if00"] #10059099 Bench/Archim Controller
 controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_75530313231351702001-if00"] #10059099 Bench/Archim Controller
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_85537303630351404011-if00"] #Dead     RAMBo-Tester 0.1a
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_855373036303512022A0-if00"] #         RAMBo-Tester 0.1a
+controllerPorts += ["/dev/serial/by-id/usb-UltiMachine__ultimachine.com__RAMBo_855373036303512C42A4-if00"] #         RAMBo-Tester 0.1a
+
 for item in controllerPorts:
     if os.path.exists(item): controllerPort = item
 
 # USB Firmware
 if len(sys.argv) >= 4:
+  if sys.argv[3] == "debug":
+    debug = True
+    usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
+  else:
     usbfw = sys.argv[3]
 else:
     usbfw = '/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX'
@@ -177,10 +187,22 @@ def home():
                  print "Homing!!!!!!!"
                  controller.home(rate = homingRate, wait = True)
                  controller.runSteppers(frequency = clampingRate, steps = 300,direction = controller.UP, wait = False)
-def powerOn():
-                 controller.pinHigh(powerPin)
+def powerOn2():
+                 controller.setMotorCurrent(100)
+                 controller.pinLow(relayBedMotorsPin) # DUT ILIMIT Reset
+                 time.sleep(0.1)
+                 controller.pinHigh(powerPin) # DUT PWR Control
+                 #time.sleep(0.0001)
+                 #controller.setMotorCurrent(100)
                  controller.pinHigh(relayBedMotorsPin)
+                 time.sleep(0.1)
                  return controller.pinHigh(relayLogicPin)
+
+def powerOn():
+                 controller.setMotorCurrent(255)
+                 controller.setPowerOn(10000); #800@2AmpsProgrammableLoad
+                 print str(controller.readPin(2))
+
 def powerOff():
                  controller.pinLow(powerPin)
                  #controller.pinLow(relayBedMotorsPin)
@@ -349,6 +371,8 @@ orderRunId = set_run_id()
 
 while(testing):
     #controller.setMotorCurrent(255)
+    #print "Press enter to continue>>>"
+    #sys.stdin.readline().strip() #raw_input().strip()
     if state == "start":
         print 'usbfw: ' + colored(usbfw,'yellow')
 	failCode = None
@@ -596,10 +620,115 @@ while(testing):
                  print "Enabling Save FW"
                  saveFirmware = True
                  continue
+            if serialNumber == "q":
+                 print "read DUT_CURRENT_nALERT"
+                 print str(controller.readPin(2))
+                 continue
+            if serialNumber == "i":
+                 print "Power on initially in transparent mode."
+                 controller.setPowerOn(10000); #800@2AmpsProgrammableLoad
+                 print str(controller.readPin(2))
+                 continue
+            if serialNumber == "e":
+                 print "set for erase."
+                 controller.pinLow(13)
+                 print str(controller.readPin(2))
+                 controller.readPin(46) #PL3 Heat2
+                 continue
+            if serialNumber == "n":
+                 print "set for no erase."
+                 controller.pinHigh(13)
+                 continue
+            if serialNumber == "st":
+                 print "Status:"
+                 mosfetInPinReadings = []
+		 for pin in board.mosfetInPins:
+		    mosfetInPinReadings += controller.readPin(pin)
+		    #controller.pinLow(pin)
+		 #if -1 in mosfetInPinReadings
+		 #   print "Reading mosfets failed."
+                 print "mosfetInPins:"
+		 print "  " + str(testProcessor.mosfetNames)
+		 print "  " + str(mosfetInPinReadings)
+
+                 #P1 Header
+                 P1_ports = ["PJ4", "PJ7", "PJ3", "PJ2", "PG4", "PG3", "PE2", "PE6"]
+                 P1_pins =  [75,     74,    73,    72,    70,    71,    78,    79]
+                 P1_readings = []
+                 P1_pullup_readings = []
+		 for pin in P1_pins:
+		    P1_readings += controller.readPin(pin)
+		 for pin in P1_pins:
+		    P1_pullup_readings += controller.pullupReadPin(pin)
+                 print "P1 Header no pullup, pullups:"
+                 print "  " + str(P1_ports)
+                 print "  " + str(P1_pins)
+                 print "  " + str(P1_readings)
+                 print "  " + str(P1_pullup_readings)
+                 continue
+            if serialNumber == "es":
+                ehresults = []
+                elresults = []
+		print "Testing endstops high..."
+		for pin in board.endstopOutPins:
+		    passed = controller.pinHigh(pin)
+		for pin in board.endstopInPins:
+		    ehresults += target.pullupReadPin(pin)
+		print "Testing endstops low..."
+		for pin in board.endstopOutPins:
+		    passed = controller.pinLow(pin)
+		for pin in board.endstopInPins:
+		    elresults += target.pullupReadPin(pin)
+		if -1 in testProcessor.endstopHigh or not passed:
+		    print "Reading endstops failed."
+                print "names: " + str(["X min", "Y min", "Z min", "X max", "Y max", "Z max"])
+                print "board.endstopOutPins: " + str( board.endstopOutPins )
+                print "board.endstopInPins: " + str( board.endstopInPins )
+                print "ehresults: " + str(ehresults)
+                print "elresults: " + str(elresults)
+                continue
+            if serialNumber == "eh":
+                ehresults = []
+		print "Testing endstops high..."
+		for pin in board.endstopOutPins:
+		    passed = controller.pinHigh(pin)
+		for pin in board.endstopInPins:
+		    ehresults += target.pullupReadPin(pin)
+		    print "Reading endstops failed."
+                print "names: " + str(["X min", "Y min", "Z min", "X max", "Y max", "Z max"])
+                print "ehresults: " + str(ehresults)
+                continue
+
+            if serialNumber == "stp":
+                 print "Status:"
+                 mosfetInPinReadings = []
+		 for pin in board.mosfetInPins:
+		    mosfetInPinReadings += controller.pullupReadPin(pin)
+		    #controller.pinLow(pin)
+		 #if -1 in mosfetInPinReadings
+		 #   print "Reading mosfets failed."
+		 print testProcessor.mosfetNames
+		 print(mosfetInPinReadings)
+                 continue
+
+            if serialNumber == "dh":
+                 drivePins = [5]
+		 print "Drive high pins: " + str(drivePins)
+		 for pin in drivePins:
+		    controller.pinHigh(pin)
+                 continue
+
+            if serialNumber == "dl":
+                 drivePins = [5]
+		 print "Drive low pins: " + str(drivePins)
+		 for pin in drivePins:
+		    controller.pinLow(pin)
+                 continue
 
             try: 
                 sNum = int(serialNumber)
-                if(  (sNum in range(10000000,10099000))  or  (sNum in range(55500000,55555555)) or  (sNum in range(20000000,20100000))): 
+		if (debug == True): break
+                if(  (sNum in range(10000000,11099000))  or  (sNum in range(55500000,55555555)) or  (sNum in range(20000000,20100000))): 
                     break
                 else:
                     print "Invalid Entry. (Use 55500000-55555555 for Testing)."
@@ -712,7 +841,11 @@ while(testing):
 
         #time.sleep(2)
     elif state == "program for test":
+        #state = "connecting target"
+        #continue
         if board.testjig == "archim":
+            controller.pinHigh(13)
+            time.sleep(1)
             state = board.programTestFirmware()
             continue
         #bootloader verification over USB
@@ -739,6 +872,10 @@ while(testing):
             state = "board fail"
 
     elif state == "connecting target":
+        powerOff()
+        time.sleep(0.4)
+        powerOn()
+        time.sleep(1)
         print "Attempting connect..."   
         if target.open(port = targetPort):
             state = "spiflashid"
@@ -758,7 +895,9 @@ while(testing):
             
     elif state == "powering":   
         print "Powering Board..."
-        state = "supply test"
+        #state = "supply test"
+        state = "uploading"
+        controller.pinLow(13) #Allow external pullup through erase test point for Archim
 
         #smpsOff over idle current test
         #is over current for smps off with power on (smpsOffovercurrent)
@@ -800,6 +939,7 @@ while(testing):
 
     elif state == "fullstep":
         print "Testing full step forward..."
+        target.setMotorCurrent(6)
         target.setMicroStepping(1)
         target.runSteppers(frequency = 200*stepperTestRPS, steps = 200, 
                            direction = target.UP, triggerPin = board.triggerPin, wait = False)
@@ -939,6 +1079,9 @@ while(testing):
             state = "board fail"      
         else:     
             state = "endstop high"
+        #remove pullups
+	for pin in board.mosfetInPins:
+	    controller.readPin(pin)
 
     elif state == "endstop high":
         passed = True
@@ -990,6 +1133,8 @@ while(testing):
         board.target.close()
 
         if board.testjig == "archim":
+            controller.pinHigh(13)
+            time.sleep(1)
             state = board.programVendorFirmware()
             continue
 
@@ -1083,6 +1228,6 @@ while(testing):
         powerOff()
         if board.testjig == "rambo":
             controller.home(homingRate, wait = True)
-        controller.restart()
+        #controller.restart()
         state = "start" 
 

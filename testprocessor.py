@@ -193,6 +193,7 @@ class TestProcessor():
 
         if self.mosfetHigh:
             print "Mosfet high values..."
+            print self.mosfetNames
             print self.mosfetHigh
             passed &= self.testMosfetHigh()
 

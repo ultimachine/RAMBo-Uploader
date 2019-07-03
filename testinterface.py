@@ -81,6 +81,10 @@ class TestInterface():
     def setMotorCurrent(self, level):
         self.serial.write("V"+str(level)+"_")
         return self.waitForFinish(clear = True)
+
+    def setPowerOn(self, delay):
+        self.serial.write("I"+str(delay)+"_")
+        return self.waitForFinish(clear = True)
                      
     def analogRead(self, pin): #Use Arduino analog pin numbering
         """Returns list with pin state"""

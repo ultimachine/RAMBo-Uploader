@@ -164,8 +164,14 @@ class ArchimRambo(Board):
     #self.target.serial.baudrate = 1200
 
     #controller pins on rambo
-    self.mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
-    self.endstopOutPins = [83, 82, 81, 80, 79, 78] #controller outputs
+                                     #PJ4, , PJ3
+    #self.mosfetInPins = [44, 32, 45, 75, 46, 73] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+                                    #TX3, ,  RX3
+    self.mosfetInPins = [44, 32, 45, 14, 46, 15] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+    #self.mosfetInPins = [44, 32, 45, 31, 46, 30] #On controller [PL5,PC5,PL4,PC6,PL3,PC7]
+
+    self.endstopOutPins = [83, 82, 5, 69, 85, 22] #controller outputs
+    #self.endstopOutPins = [83, 82, 81, 80, 79, 78] #controller outputs
     #self.vrefPins = [8, 6, 5, 4, 3] #x, y, z, e0, e1 on controller
 
     self.resetPin = 84
@@ -173,7 +179,8 @@ class ArchimRambo(Board):
     #target board pins (test points)
     self.triggerPin = 9 #7
     self.endstopInPins = [14, 29, 31, 32, 15, 30] #target inputs Xmin,Ymin,Zmin,Xmax,Ymax,Zmax
-    self.mosfetOutPins = [9, 4, 8, 7, 6, 5] #On target BED, FAN0, HEAT3, HEAT2, HEAT1, FAN1
+                                            #OLD       BED, FAN0, HEAT3, HEAT2, HEAT1, FAN1
+    self.mosfetOutPins = [9, 4, 8, 7, 6, 5] #On target Bed, Fan2, Fan1, Heat1, Heat2, Heat3
     self.testFirmwarePath = "archim_testfw.bin"
     self.vendorFirmwarePath = "archim_marlin.bin"
     self.thermistorPins = [10,9,11,8] #T0 T1 T2 T3
@@ -186,13 +193,14 @@ class ArchimRambo(Board):
 
   def setTestProcessor(self):
     self.testProcessor = TestProcessor()
+    self.testProcessor.mosfetNames = ["Bed","Fan2","Fan1","Heat1","Heat2","Heat3"]  
     self.testProcessor.supplyNames = ["3V rail","Bed rail", "5V rail"]
     #self.testProcessor.thermistorLow = 925
     #self.testProcessor.thermistorHigh = 955
     self.testProcessor.rail_0_low = 3.22 #3.3 on MM reads 3.273 on test
     self.testProcessor.rail_0_high = 3.35
     self.testProcessor.railsLow = [(3.23-.04), 23, 4.7] #tolerance of regulator - skew of read
-    self.testProcessor.railsHigh = [3.37-.04, 25.5, 5.2] #tolerance of regulator - skew of read
+    self.testProcessor.railsHigh = [3.8, 25.5, 5.2] #tolerance of regulator - skew of read
     print "setting supply names: " + str(self.testProcessor.supplyNames)
 
   def setState(self):
@@ -203,8 +211,13 @@ class ArchimRambo(Board):
     return "fullstep"
 
   def programTestFirmware(self):
-        self.samba_mode()
-        subprocess.Popen( shlex.split( "lsusb -d 27b1:0001" )).wait()
+        #self.samba_mode()
+        #subprocess.Popen( shlex.split( "lsusb -d 27b1:0001" )).wait()
+        #for x in range(30):
+        #    if os.path.exists("/dev/ttyACM1"):
+        #        break
+        #   time.sleep(0.1)
+
         program_testfw_cmd = 'bossac -e -w -v -b -R ../Test_Jig_Firmware/Test_Jig_Firmware.ino.archim.bin'
         program_testfw__process = subprocess.Popen( shlex.split( program_testfw_cmd ) )
         if program_testfw__process.wait():
@@ -220,7 +233,7 @@ class ArchimRambo(Board):
   def programVendorFirmware(self):
         #return "testamps"
         print "self.vendorFirmwarePath: " + self.vendorFirmwarePath
-        self.samba_mode()
+        self.samba_mode2()
         program_fw_cmd = 'bossac -e -w -v -b ../Marlin4Due/Marlin/Marlin.ino.archim.bin'
         program_fw_process = subprocess.Popen( shlex.split( program_fw_cmd ) )
         if program_fw_process.wait():
@@ -263,7 +276,7 @@ class ArchimRambo(Board):
 		print "SAMBA-mode."
 		s.close()
 
-  def samba_mode(self):
+  def samba_mode2(self):
 	#subprocess.Popen( shlex.split( "/home/rig/btmode.py" )).wait()
 	#return
 	if not subprocess.Popen( shlex.split( "lsusb -d 03eb:6124" )).wait(): #look for samba boot loader
@@ -275,19 +288,37 @@ class ArchimRambo(Board):
 	s = serial.Serial(port = None, baudrate = 1200)
 	try:
 		s.port = "/dev/ttyACM1"
+                s.baudrate = 1200
 		if s.isOpen(): s.close()
 		s.open()
 		s.setDTR(0)
 		#time.sleep(1)
-		#s.setDTR(1)
-		#s.close()
+		s.setDTR(1)
+		s.close()
 		print "Target did not close connection automatically."
 	except IOError:
 		print "Target closed connection automatically."
 	except:
 		traceback.print_exc()
 	if s.isOpen(): s.close()
-	time.sleep(1)
+	time.sleep(2)
+	if subprocess.Popen( shlex.split( "lsusb -d 03eb:6124" )).wait(): #look for samba boot loader
+		print colored("SAMBA boot loader not found!",'red')
+
+  def samba_mode(self):
+	if not subprocess.Popen( shlex.split( "lsusb -d 03eb:6124" )).wait(): #look for samba boot loader
+		print colored("Already in SAMBA mode.",'blue')
+		return
+
+        for x in range(30):
+            if os.path.exists("/dev/ttyACM1"):
+                break
+            time.sleep(0.1)
+        time.sleep(1)
+
+	if not subprocess.Popen( shlex.split( "stty -F /dev/ttyACM1 1200" )).wait(): #look for samba boot loader
+		print colored("Failed to run: stty -F /dev/ttyACM1 1200",'red')
+
 	if subprocess.Popen( shlex.split( "lsusb -d 03eb:6124" )).wait(): #look for samba boot loader
 		print colored("SAMBA boot loader not found!",'red')
 
