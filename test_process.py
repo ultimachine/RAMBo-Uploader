@@ -725,6 +725,16 @@ while(testing):
 		    controller.pinLow(pin)
                  continue
 
+            if serialNumber == "mh":
+                print "Mosfets ON"
+                for pin in board.mosfetOutPins:
+                    target.pinHigh(pin)
+
+            if serialNumber == "ml":
+                print "Mosfets OFF"
+                for pin in board.mosfetOutPins:
+                    target.pinLow(pin)
+
             try: 
                 sNum = int(serialNumber)
 		if (debug == True): break
@@ -895,8 +905,8 @@ while(testing):
             
     elif state == "powering":   
         print "Powering Board..."
-        #state = "supply test"
-        state = "uploading"
+        state = "supply test"
+        #state = "uploading"
         controller.pinLow(13) #Allow external pullup through erase test point for Archim
 
         #smpsOff over idle current test
@@ -1047,12 +1057,12 @@ while(testing):
             print "Reading SPI FLASH ID failed."
             state = "board fail"
             continue
-        print "Testing Archim SDCARD."
-        testProcessor.sdcard = target.initSdcard()
-        if -1 in testProcessor.spiflashid:
-            print "Reading SDCARD failed."
-            state = "board fail"
-            continue
+        #print "Testing Archim SDCARD."
+        #testProcessor.sdcard = target.initSdcard()
+        #if -1 in testProcessor.spiflashid:
+        #    print "Reading SDCARD failed."
+        #    state = "board fail"
+        #    continue
 
     elif state == "mosfet high":
         passed = True
@@ -1196,6 +1206,7 @@ while(testing):
         #termios.tcflush(sys.stdin, termios.TCIOFLUSH)
 
         while True:
+            powerOff()
 	    print "0 See Comments, 1 Valid Fail, 2 Board insertet incorrectly, 3 No Fuse, 4 Bootloader missing"
             print "Enter code for fail: "
             failCode = raw_input().strip()
