@@ -168,6 +168,7 @@ class TestInterface():
         return True
     
     def waitForStart(self):
+        self.serial.flushInput() #flush host input
         self.output = ""
         while "start" not in self.output:
             time.sleep(0.1)
