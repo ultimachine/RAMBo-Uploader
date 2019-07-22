@@ -1281,6 +1281,7 @@ while(testing):
         #termios.tcflush(sys.stdin, termios.TCIOFLUSH)
 
         while True:
+            powerOff()
 	    print "0 See Comments, 1 Valid Fail, 2 Board insertet incorrectly, 3 No Fuse, 4 Bootloader missing"
             print "Enter code for fail: "
             failCode = raw_input().strip()
