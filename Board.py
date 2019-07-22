@@ -220,9 +220,11 @@ class EinsyPrusaMK3Firmware(EinsyRambo):
     self.vendorFirmwarePath = "/home/ultimachine/Downloads/prusa3d_fw_MK3_3_5_1.hex"
     self.setVendorFirmware()
     #self.firmware32u2 = "/home/ultimachine/Prusa-usbserial-DFU.hex"
-    self.firmware32u2 = "/home/ultimachine/workspace/Einsy/PrusaBootloaders/Prusa-m32u2-DFU.hex"
+    ###self.firmware32u2 = "/home/ultimachine/workspace/Einsy/PrusaBootloaders/Prusa-m32u2-DFU.hex"
     #self.bootloader2560 = "/home/ultimachine/workspace/Einsy/stk500v2-prusa/stk500v2-prusa.hex"
-    self.bootloader2560 = "/home/ultimachine/workspace/Einsy/PrusaBootloaders/stk500boot_v2_mega2560.hex"
+    ###self.bootloader2560 = "/home/ultimachine/workspace/Einsy/PrusaBootloaders/stk500boot_v2_mega2560.hex"
+    self.firmware32u2 = "/home/ultimachine/workspace/RAMBo/bootloaders/RAMBo-usbserial-DFU-combined-32u2.HEX"
+    self.bootloader2560 = "/home/ultimachine/Downloads/stk500boot_v2_mega2560_app_end_8k.hex"
 
 class EinsyRetro(EinsyRambo):
   def __init__(self):
