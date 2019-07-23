@@ -11,8 +11,8 @@ from watchpuppy import *
 from termcolor import colored
 
 def listports():
-	import glob
-	print(' '.join( glob.glob("/dev/ttyACM[0-9]") )) #effectively 'ls /dev/ttyACM*'
+    import glob
+    print(' '.join( glob.glob("/dev/ttyACM[0-9]") )) #effectively 'ls /dev/ttyACM*'
 
 class CompatProgrammablePSU():
     def __init__(self):
@@ -97,9 +97,9 @@ class CompatProgrammablePSU():
         time.sleep(1) #0.2
         self.showStatus();
         
-        if(self.status == "1216" and self.retry_count < 2):
-                self.retry_count = self.retry_count + 1
-                self.on()
+        if(self.status == "1216" and self.retry_count < 5):
+            self.retry_count = self.retry_count + 1
+            self.on()
 
 
     def off(self): #psu OFF
