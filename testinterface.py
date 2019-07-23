@@ -142,6 +142,26 @@ class TestInterface():
             return self._findValues()
         else: 
             return [-1]
+
+    def readNanoFarads(self, pin, resistorValue = 3800):
+        """Returns list with pin nanoFarad values"""
+        self.serial.write("N"+str(pin)+"R"+str(resistorValue)+"_")
+        if self.waitForFinish():
+            print colored(self.output,'magenta')
+            return self._findValues()
+        else: 
+            return [-1]
+
+    def readMicrosecondRiseTime(self, pin, resistorValue = 3800):
+        """Returns pin list with rise time values in microseconds"""
+        cmd="X"+str(pin)+"_"
+        if(self.debugmode): print colored(cmd,'magenta')
+        self.serial.write(cmd)
+        if self.waitForFinish():
+            print colored(self.output,'magenta')
+            return self._findValues()
+        else: 
+            return [-1]
         
     def home(self, rate, wait = True):
         self.serial.write("H"+str(rate)+"_")

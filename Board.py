@@ -182,6 +182,12 @@ class EinsyRambo(MiniRambo):
     self.targetVref = 255
     self.I2CPins = [20, 21] #SDA SCL
 
+    tachOhms = 3800.0
+    thermOhms = 2370.0 + 2370.0 + 4700.0
+    self.nanoFaradPinNames = [ "Tach1, Tach2, T0, T1, T2" ]
+    self.nanoFaradPullupOhms = [ tachOhms, tachOhms, thermOhms, thermOhms, thermOhms ]
+    self.nanoFaradPins = [79, 80, 54, 55, 56]
+
 class PrusaEinsy(EinsyRambo):
   def __init__(self):
     EinsyRambo.__init__(self)

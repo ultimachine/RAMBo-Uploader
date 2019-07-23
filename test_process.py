@@ -734,6 +734,27 @@ while(testing):
                 print "diag results: " + str(diag_results)
                 continue
 
+            if serialNumber == "nf":
+                nanoFaradResults = []
+		print "Testing nanoFarads on pins with RC circuits..."
+		for idx, pin in enumerate(board.nanoFaradPins):
+		    nanoFaradResults += target.readNanoFarads(pin,board.nanoFaradPullupOhms[idx])
+		if -1 in nanoFaradResults:
+		    print colored("Error: Reading nanoFaradResults failed.",'red');
+                print str(board.nanoFaradPinNames)
+                print "nanoFaradResults: " + str(nanoFaradResults)
+                continue
+
+            if serialNumber == "rt":
+                nanoFaradResults = []
+		print "Testing microsecond rise time on pins with RC circuits..."
+		for pin in board.nanoFaradPins:
+		    nanoFaradResults += target.readMicrosecondRiseTime(pin)
+		if -1 in nanoFaradResults:
+		    print colored("Error: Reading nanoFaradResults failed.",'red');
+                print str(board.nanoFaradPinNames)
+                print "nanoFaradResults: " + str(nanoFaradResults)
+                continue
             if serialNumber == "btonly":
                 if bootloadOnlyMode == True:
                     print "Boot Only Mode Disabled"
@@ -1097,8 +1118,21 @@ while(testing):
     elif state == "i2c floating":
         state = "spiflashid"
         passed = True
-        ehresults = []
+
+        #Capacitor + Resistor (RC) Test
+        testProcessor.nanoFaradResults = []
+	print "Testing nanoFarads on pins with RC circuits..."
+	for idx, pin in enumerate(board.nanoFaradPins):
+	    testProcessor.nanoFaradResults += target.readNanoFarads(pin,board.nanoFaradPullupOhms[idx])
+        print str(board.nanoFaradPinNames)
+        print "nanoFaradResults: " + str(testProcessor.nanoFaradResults)
+	if -1 in testProcessor.nanoFaradResults:
+            print colored("Error: Reading nanoFards on pins failed.",'red');
+            state = "board fail"  
+            continue
+
 	print "Testing i2c pins low..."
+        ehresults = []
 	for pin in board.I2CPins:
             passed = target.pinLow(pin)
             time.sleep(0.01)
