@@ -38,6 +38,10 @@ class TestProcessor():
         self.diagsHigh = []
         self.diags0_Low = []
         self.diags1_Low = []
+        self.nanoFaradPinNames = [ "Tach1", "Tach2", "T0", "T1", "T2" ]
+        self.nanoFaradResults = []
+        self.nanoFaradsHigh = [ 112, 112, 112, 112, 112]
+        self.nanoFaradsLow = [ 55, 55, 55, 55, 55]
 
 
     def testSpiflashid(self):
@@ -109,6 +113,19 @@ class TestProcessor():
                 self.errors += "Test " + self.supplyNames[i] + " supply\n"
                 passed &= False
 
+        return passed
+
+    def testNanoFarads(self):
+        passed = True
+        if self._wasTimedOut(self.nanoFaradResults):
+            print "...Timed out at nanoFarad test"
+            return False
+        print self.nanoFaradResults
+        for idx, val in enumerate(self.nanoFaradResults):
+            print "idx: " + str(idx)
+            if not self.nanoFaradsLow[idx] <= val <= self.nanoFaradsHigh[idx]:
+                self.errors += "Check RCCircuit " + self.nanoFaradPinNames[idx] + "\n"
+                passed = False
         return passed
 
     def testThermistors(self):
@@ -246,6 +263,17 @@ class TestProcessor():
             print "Target thermistor readings..."
             print self.thermistors
             passed &= self.testThermistors()
+
+        #testNanoFarads
+        if self.nanoFaradResults:
+            #print "thermistor names"
+            #print self.thermistorNames
+            print "Target nanoFarad readings..."
+            print self.nanoFaradPinNames
+            print self.nanoFaradResults
+            passed &= self.testNanoFarads()
+        else:
+            print colored("Warning: No nanoFarad Results", 'yellow')
 
         if self.mosfetHigh:
             print "Mosfet high values..."
