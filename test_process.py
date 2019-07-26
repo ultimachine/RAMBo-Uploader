@@ -766,13 +766,13 @@ while(testing):
 
             try: 
                 sNum = int(serialNumber)
-                if(  (sNum in range(10000000,11000000))  or  (sNum in range(55500000,55555555)) or  (sNum in range(20000000,20100000))): 
+                if( (10000000<sNum<11000000) or (22400000<sNum<999999999) or (20000000<sNum<20100000) ):
                     break
                 else:
-                    print "Invalid Entry. (Use 55500000-55555555 for Testing)."
+                    print colored("Error: Invalid Range.",'red')
                     call(["beep","-f 2250"])
             except: 
-                print "Error!  That was not a valid entry. Try again... (Use 55500000-55555555 for Testing)"
+                print colored("Exception!  That was not a valid entry. Try again...",'red')
                 call(["beep","-f 2250"])
 
         print "Testjig is now: " + board.testjig
