@@ -159,6 +159,7 @@ psu = CompatProgrammablePSU()
 #psu = DirectPSU()
 psu.controller = controller
 psu.open(port = psuPort)
+psu.retry_count = 0
 
 #Setup up avrdude config for upload to an Arduino.
 avrdude = Avrdude()
