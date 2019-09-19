@@ -212,13 +212,16 @@ class ArchimRambo(Board):
 
   def programTestFirmware(self):
         #self.samba_mode()
-        #subprocess.Popen( shlex.split( "lsusb -d 27b1:0001" )).wait()
-        #for x in range(30):
-        #    if os.path.exists("/dev/ttyACM1"):
-        #        break
-        #   time.sleep(0.1)
-
-        program_testfw_cmd = 'bossac -e -w -v -b -R ../Test_Jig_Firmware/Test_Jig_Firmware.ino.archim.bin'
+        subprocess.Popen( shlex.split( "lsusb -d 27b1:0001" )).wait()
+        subprocess.Popen( shlex.split( "lsusb -d 03eb:6124" )).wait()
+        print "Waiting for ttyACM1"
+        for x in range(30):
+            if os.path.exists("/dev/ttyACM1"):
+                print "Done Waiting. Path Exists ttyACM1"
+                break
+            time.sleep(0.1)
+        time.sleep(0.5)
+        program_testfw_cmd = 'bossac --port=ttyACM1 -e -w -v -b -R ../Test_Jig_Firmware/Test_Jig_Firmware.ino.archim.bin'
         program_testfw__process = subprocess.Popen( shlex.split( program_testfw_cmd ) )
         if program_testfw__process.wait():
                 print colored("Uploading Test Firmware Failed.",'red')

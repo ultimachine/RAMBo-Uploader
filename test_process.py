@@ -26,6 +26,9 @@ import termios
 import datetime
 import finishedGoods
 from Board import *
+from compatible_mode_programmable_psu_interface import *  #COMP (COMPatibility commands) see 663xxprg.pdf
+from programmable_psu_interface import * #SCPI (Standard Commands for Programmable Instruments) see 663xxprg.pdf
+from direct_psu_interface import *
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
@@ -130,6 +133,20 @@ if not controller.open(port = controllerPort):
     print "Check controller connection."
     sys.exit(0)
 
+psuPorts  = ["/dev/serial/by-id/usb-Prologix_Prologix_GPIB-USB_Controller_PX9LUIO9-if00-port0"]
+#psuPorts += ["/dev/serial/by-id/usb-Prologix_Prologix_GPIB-USB_Controller_PX2CJNJB-if00-port0"]
+psuPort = "/dev/ttyUSB0"
+
+for item in psuPorts:
+    if os.path.exists(item): psuPort = item
+
+psu = CompatProgrammablePSU()
+#psu = ProgrammablePSU()
+#psu = DirectPSU()
+psu.controller = controller
+psu.open(port = psuPort)
+psu.retry_count = 0
+
 #Setup up avrdude config for upload to an Arduino.
 avrdude = Avrdude()
 avrdude.path = "/usr/bin/avrdude"
@@ -198,15 +215,26 @@ def powerOn2():
                  time.sleep(0.1)
                  return controller.pinHigh(relayLogicPin)
 
-def powerOn():
+def powerOn_RamboTester01a():
                  controller.setMotorCurrent(255)
                  controller.setPowerOn(10000); #800@2AmpsProgrammableLoad
                  print str(controller.readPin(2))
 
-def powerOff():
-                 controller.pinLow(powerPin)
+def powerOff_RamboTester01a():
+                 controller.pinLow(powerPin) #9
                  #controller.pinLow(relayBedMotorsPin)
                  #controller.pinLow(relayLogicPin)
+
+def powerOn():
+                 print colored("Turn power supply ON ON to continue....!!>>","cyan")
+                 sys.stdin.readline().strip() #raw_input().strip()
+                 #psu.on()
+
+def powerOff():
+                 print colored("Turn power supply OFF OFF to continue....!!>>","cyan")
+                 sys.stdin.readline().strip() #raw_input().strip()
+                 #psu.off()
+
 def smpsOn():
                  controller.pinLow(9)
                  time.sleep(0.1)
@@ -882,10 +910,12 @@ while(testing):
             state = "board fail"
 
     elif state == "connecting target":
-        powerOff()
-        time.sleep(0.4)
-        powerOn()
-        time.sleep(1)
+        #powerOff()
+        #time.sleep(0.4)
+        #powerOn()
+        print colored("PRESS RESET BUTTON THEN PRESS ENTER KEY..!!..!.!!.!..>>","cyan")
+        sys.stdin.readline().strip() #raw_input().strip()
+        #time.sleep(1)
         print "Attempting connect..."   
         if target.open(port = targetPort):
             state = "spiflashid"
