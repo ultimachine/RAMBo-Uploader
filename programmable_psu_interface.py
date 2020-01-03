@@ -67,8 +67,8 @@ class ProgrammablePSU():
     def program_psu_settings(self):
         self.sendline(b':OUTPUT OFF')
         self.sendline(b':SOURCE:CURRENT:PROTECTION:CLEAR')
-        self.sendline(b':OUTPUT:OCP:VALUE 2')
-        self.sendline(b':OUTPUT:OCP ON')
+        #self.sendline(b':OUTPUT:OCP:VALUE 2')
+        #self.sendline(b':OUTPUT:OCP ON')
         self.sendline(b':OUTPUT:OVP:VALUE 25')
         self.sendline(b':OUTPUT:OVP ON')
         self.sendline(b':APPLY CH1,24,2')
