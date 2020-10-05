@@ -17,6 +17,8 @@ class TestInterface():
         self._groupn = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)]
          
     def open(self, port):
+        if port is None:
+            return False
         if not os.path.exists(port):
             print "Serial port not detected!"
             return False

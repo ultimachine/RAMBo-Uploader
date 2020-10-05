@@ -114,7 +114,7 @@ else:
 controller = TestInterface()
 target = TestInterface()
 if not controller.open(port = controllerPort):
-    print "Check controller connection."
+    print colored("Check controller connection.",'red')
     sys.exit(0)
 
 #Setup up avrdude config for upload to an Arduino.
