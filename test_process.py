@@ -929,9 +929,11 @@ while(testing):
                     break
                 else:
                     print colored("Error: Invalid Range.",'red')
+                    print colored("Valid Entry Ranges: (10000000<sNum<11000000) or (22400000<sNum<999999999)  or (20000000<sNum<20100000)",'yellow')
                     call(["beep","-f 2250"])
             except: 
                 print colored("Exception!  That was not a valid entry. Try again...",'red')
+                print colored("Valid Entry Ranges: (10000000<sNum<11000000) or (22400000<sNum<999999999)  or (20000000<sNum<20100000)",'yellow')
                 call(["beep","-f 2250"])
 
         print "Testjig is now: " + board.testjig
