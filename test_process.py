@@ -259,6 +259,7 @@ def programBootloaders():
         bootcmd2560 = avrdude_cmd + ' -s -v -v -V -b 1000000 -p m2560      -P usb:000200212345 -c avrispmkII -e -Uflash:w:' + board.bootloader2560 + ':i -Uefuse:w:0xFD:m -Uhfuse:w:0xD0:m -Ulfuse:w:0xFF:m -Ulock:w:0x0F:m'
         bootloader32u2 = subprocess.Popen( shlex.split( bootcmd32u2 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader32u2.wait()
+        #time.sleep(0.5)
         bootloader2560 = subprocess.Popen( shlex.split( bootcmd2560 ), stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
         bootloader2560.wait()
 
@@ -513,7 +514,11 @@ while(testing):
 			print "Bootloader is now on"
 			btldrState = True
 		 continue
-
+            if serialNumber == "l":
+                 print "Programming Bootloaders!!!!!!!"
+                 powerOn()
+                 programBootloaders()
+                 continue
             if serialNumber == "p":
                  print "Powering!!!!!!!"
                  powerOn()
