@@ -99,6 +99,15 @@ class TestInterface():
         else: 
             return [-1]
 
+    def check_iserial(self):
+        """Returns MCU internal serial number"""
+        print "Returns MCU internal serial number"
+        self.write("I_")
+        if self.waitForFinish():
+            return self._find_Alphanumeric_Values()
+        else:
+            return "-1"
+
     def initSpiflash(self):
         """Returns archim spiflash mfg id"""
         self.write("S_")
@@ -154,7 +163,7 @@ class TestInterface():
 
     def readNanoFarads(self, pin, resistorValue = 3800):
         """Returns list with pin nanoFarad values"""
-        self.serial.write("N"+str(pin)+"R"+str(resistorValue)+"_")
+        self.write("N"+str(pin)+"R"+str(resistorValue)+"_")
         if self.waitForFinish():
             print colored(self.output,'magenta')
             return self._findValues()
@@ -164,8 +173,7 @@ class TestInterface():
     def readMicrosecondRiseTime(self, pin, resistorValue = 3800):
         """Returns pin list with rise time values in microseconds"""
         cmd="X"+str(pin)+"_"
-        if(self.debugmode): print colored(cmd,'magenta')
-        self.serial.write(cmd)
+        self.write(cmd)
         if self.waitForFinish():
             print colored(self.output,'magenta')
             return self._findValues()
@@ -203,7 +211,10 @@ class TestInterface():
     def waitForFinish(self, commands = 1, timeout = 2, clear = False):
         self.watchPuppy.startWatching(timeout = timeout)
         while self.output.count("ok") < commands:
-            self.output += self.read()
+            read_buf = self.read()
+            if self.debugmode and len(read_buf) > 0:
+                sys.stdout.write(colored(read_buf,color='yellow'))
+            self.output += read_buf
             if self.watchPuppy.timedOut():
                 print "Response timed out!"
                 if clear:
@@ -234,6 +245,16 @@ class TestInterface():
             vals = map(int,re.findall(r'\b\d+\b', self.output))  
         if self.debugmode:
             print( colored(self.output,self.responseColor,attrs=self.responseAttrs) )
+        self.output = ""
+        self.read()
+        return vals
+
+    def _find_Alphanumeric_Values(self, groups = 0):
+        vals = []
+        if groups > 0:
+            vals = self._groupn(map(str,re.findall(r'\b\w+\b', self.output)), groups)
+        else:
+            vals = map(str,re.findall(r'\b\w+\b', self.output))  
         self.output = ""
         self.read()
         return vals

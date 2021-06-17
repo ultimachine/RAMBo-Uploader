@@ -26,9 +26,13 @@ import termios
 import datetime
 import finishedGoods
 from Board import *
+
 from compatible_mode_programmable_psu_interface import *  #COMP (COMPatibility commands) see 663xxprg.pdf
 from programmable_psu_interface import * #SCPI (Standard Commands for Programmable Instruments) see 663xxprg.pdf
 from direct_psu_interface import *
+
+import readline
+import inspect
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
@@ -82,6 +86,7 @@ currentReadings = []
 saveFirmware = False
 btldrState = True
 bootloadOnlyMode = False
+check_USB_iserial = False
 
 testStorage = psycopg2.connect(postgresInfo)
 cursor = testStorage.cursor()
@@ -480,6 +485,18 @@ def test_diags1_low():
             print str(testProcessor.diags1_Low)
             return 0
 
+def is_duplicate_serial(iserial):
+  #Consistent iserial check: verify iserial matches first historical iserial number for the referenced serial number
+  cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
+  rows = cursor.fetchall()
+  if(len(rows)):
+    print "historial: ", rows
+    print "this iserial: ", iserial
+    if not iserial == str(rows[0][2]):
+      print "Line Number: " + str(inspect.getframeinfo(inspect.currentframe()).lineno) + " " + colored("Warning! This serial number was previously tested with a different internal serial. This board may have a duplicate barcode serial number.",'yellow')
+      return True
+  return False
+
 orderRunId = set_run_id()
 
 while(testing):
@@ -497,8 +514,9 @@ while(testing):
                  print colored("Warning: Not a CLEAN program. Alert your nearest administrator immediately!",'red')
 	    finishedGoods.main(datetime.date.today(),cursor,testStorage,testjig=board.testjig)
 	    print_run_id_info(orderRunId, board.testjig)
-            print colored("Enter serial number : ","cyan")
-            serialNumber = sys.stdin.readline().strip() #raw_input().strip()
+            #print colored("Enter serial number : ","cyan")
+            #serialNumber = sys.stdin.readline().strip() #raw_input().strip()
+            serialNumber = raw_input(colored("Enter serial number : ","cyan"))
 	    if serialNumber == "sr": #select runid
 		print "productionrunid | productionrunname | shipdate| shipqty"
 		cursor.execute("""SELECT productionrunid,productionrunname,shipdate,shipqty FROM public.productionruns ORDER BY productionrunid""")
@@ -566,7 +584,17 @@ while(testing):
 			print "Bootloader is now on"
 			btldrState = True
 		 continue
-
+            if serialNumber == "l":
+                 print "Programming Bootloaders!!!!!!!"
+                 powerOn()
+                 programBootloaders()
+                 continue
+            if serialNumber == "i":
+                 print "Checking MCU internal serial number"
+                 iserial_result = target.check_iserial()
+                 if -1 in iserial_result:
+                   print colored("Check iserial failed.",'red')
+                 print "iserial: " + str(iserial_result)
             if serialNumber == "p":
                  print "Powering!!!!!!!"
                  powerOn()
@@ -948,39 +976,39 @@ while(testing):
         controller.waitForStart() #Blocks until button pressed
 
         state = board.setState()
+        if check_USB_iserial:
+                iserial = board.setISerial(targetPort)
+                if not btldrState and iserial == 0  and len(sys.argv) >= 4:
+                    state = "start"
+                    continue
 
-        iserial = board.setISerial(targetPort)
-        if not btldrState and iserial == 0  and len(sys.argv) >= 4:
-            state = "start"
-            continue
+                if iserial != 0:
+	            #Consistent iserial check: verify iserial matches first historical iserial number for the referenced serial number
+	            cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
+	            rows = cursor.fetchall()
+	            if(len(rows)):
+	              print "historial: ", rows
+	              print "this 32u2 iserial: ", iserial
+	              if not iserial == str(rows[0][2]):
+                        print "Line Number: " + str(inspect.getframeinfo(inspect.currentframe()).lineno) + " " + colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
+	                state = "start"
+	                continue
 
-        if iserial != 0:
-	    #Consistent iserial check: verify iserial matches first historical iserial number for the referenced serial number
-	    cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
-	    rows = cursor.fetchall()
-	    if(len(rows)):
-	      print "historial: ", rows
-	      print "this 32u2 iserial: ", iserial
-	      if not iserial == str(rows[0][2]):
-	        print colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
-	        state = "start"
-	        continue
+	            #Prevent extra serial numbers attached to single board by checking a boards first assigned serial number. 
+                    #Example situation: retesting a board but scanning a fresh boards serial number. 
+                    #lookup previous tests by iserial
+	            cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "iserial" = %s)""", (iserial,) )
+	            rows = cursor.fetchall()
+	            if(len(rows)):
+	              print "historial: ", rows
+	              print "this 32u2 iserial: ", iserial
+	              if not serialNumber == str(rows[0][1]):
+                        print "Line Number: " + str(inspect.getframeinfo(inspect.currentframe()).lineno) + " " + colored("Warning! This board was first tested with a different serial number then the one provided. Try again with the correct serial number.",'yellow')
+	                state = "start"
+	                continue
 
-	    #Prevent extra serial numbers attached to single board by checking a boards first assigned serial number. 
-            #Example situation: retesting a board but scanning a fresh boards serial number. 
-            #lookup previous tests by iserial
-	    cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "iserial" = %s)""", (iserial,) )
-	    rows = cursor.fetchall()
-	    if(len(rows)):
-	      print "historial: ", rows
-	      print "this 32u2 iserial: ", iserial
-	      if not serialNumber == str(rows[0][1]):
-	        print colored("Warning! This board was first tested with a different serial number then the one provided. Try again with the correct serial number.",'yellow')
-	        state = "start"
-	        continue
-
-        if iserial == 0:
-            iserial = None #prevent zero from getting stored in db as the iserial.
+                if iserial == 0:
+                    iserial = None #prevent zero from getting stored in db as the iserial.
 
         print "Test started at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
@@ -1009,11 +1037,13 @@ while(testing):
                 print colored("Trying to program bootloaders again..",'yellow')
                 if programBootloaders():
                     state = "board fail"
+                time.sleep(1) #0.8
 
     elif state == "iserialcheck":
         state = "program for test"
-        time.sleep(1) #0.8
-
+        if check_USB_iserial is False:
+                time.sleep(1) #0.8
+                continue
         #get iserial
         iserial = board.setISerial(targetPort)
 
@@ -1035,7 +1065,7 @@ while(testing):
                 print "historial: ", rows
                 print "this 32u2 iserial: ", iserial
                 if not iserial == str(rows[0][2]):
-                        print colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
+                        print "Line Number: " + str(inspect.getframeinfo(inspect.currentframe()).lineno) + " " + colored("Warning! This serial number was previously tested with a different 32u2 iserial. This board may have a duplicate serial number.",'yellow')
                         state = "board fail"
                         continue
 
@@ -1052,7 +1082,8 @@ while(testing):
         #verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + directory + '/stk500boot_v2_mega2560.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
 
         #verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + '/home/ultimachine/workspace/Einsy/stk500v2-prusa' + '/stk500v2-prusa.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
-        verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + board.bootloader2560 + ':i -Uefuse:v:0xFD:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
+        verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + board.bootloader2560 + ':i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
+        print "$ " + verify2560bootloader_cmd
         verify2560bootloader_process = subprocess.Popen( shlex.split( verify2560bootloader_cmd ) )
         if verify2560bootloader_process.wait():
                 print colored("2560 Bootloader Verification FAILED!! ",'red')
@@ -1077,7 +1108,8 @@ while(testing):
     elif state == "connecting target":
         print "Attempting connect..."   
         if target.open(port = targetPort):
-            state = "i2c floating"
+            state = "check_iserial"
+            #state = "i2c floating"
             #state = "mosfet high"
             #state = "spiflashid"
             #state = "mosfet high"
@@ -1085,6 +1117,18 @@ while(testing):
         else:
             print colored("Connect failed.",'red')
             state = "board fail"
+
+    elif state == "check_iserial":
+        print "Checking MCU internal serial number"
+        iserial = target.check_iserial()[0]
+        if "-1" in iserial:
+          print colored("Check iserial failed.",'red')
+          state = "board fail"
+        else:
+          state = "i2c floating"
+        if is_duplicate_serial(iserial):
+          print colored("Duplicate serial check failed.",'red','on_white')
+          state = "board fail"
 
     elif state == "wait for homing":
         print "Waiting for homing to complete..."
