@@ -90,6 +90,14 @@ class TestInterface():
         else: 
             return [-1]
 
+    def check_iserial(self):
+        """Returns MCU internal serial number"""
+        self.serial.write("I_")
+        if self.waitForFinish():
+            return self._findValues()
+        else:
+            return [-1]
+
     def initSpiflash(self):
         """Returns archim spiflash mfg id"""
         self.serial.write("S_")

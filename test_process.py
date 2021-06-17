@@ -428,6 +428,18 @@ def test_diags1_low():
             print str(testProcessor.diags1_Low)
             return 0
 
+def is_duplicate_serial(iserial):
+  #Consistent iserial check: verify iserial matches first historical iserial number for the referenced serial number
+  cursor.execute("""SELECT "tid","serial","iserial" FROM "public"."testdata" WHERE tid = (SELECT MIN(tid) FROM public.testdata WHERE "serial" = %s AND "iserial" IS NOT NULL)""", (serialNumber,) )
+  rows = cursor.fetchall()
+  if(len(rows)):
+    print "historial: ", rows
+    print "this iserial: ", iserial
+    if not iserial == str(rows[0][2]):
+      print colored("Warning! This serial number was previously tested with a different internal serial. This board may have a duplicate barcode serial number.",'yellow')
+      return True
+  return False
+
 orderRunId = set_run_id()
 
 while(testing):
@@ -921,12 +933,22 @@ while(testing):
     elif state == "connecting target":
         print "Attempting connect..."   
         if target.open(port = targetPort):
-            state = "i2c floating"
+            state = "check_iserial"
+            #state = "i2c floating"
             #state = "mosfet high"
 #            state = "wait for homing"
         else:
             print colored("Connect failed.",'red')
             state = "board fail"
+
+    elif state == "check_iserial":
+        print "Checking MCU internal serial number"
+        iserial = target.check_iserial()
+        if -1 in iserial:
+          print colored("Check iserial failed.",'red')
+          state = "board fail"
+        else:
+          state = "i2c floating"
 
     elif state == "wait for homing":
         print "Waiting for homing to complete..."
