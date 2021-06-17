@@ -26,6 +26,7 @@ import termios
 import datetime
 import finishedGoods
 from Board import *
+import readline
 
 print "RAMBo Test Server"
 directory = os.path.split(os.path.realpath(__file__))[0]
@@ -457,8 +458,9 @@ while(testing):
                  print colored("Warning: Not a CLEAN program. Alert your nearest administrator immediately!",'red')
 	    finishedGoods.main(datetime.date.today(),cursor,testStorage,testjig=board.testjig)
 	    print_run_id_info(orderRunId, board.testjig)
-            print colored("Enter serial number : ","cyan")
-            serialNumber = sys.stdin.readline().strip() #raw_input().strip()
+            #print colored("Enter serial number : ","cyan")
+            #serialNumber = sys.stdin.readline().strip() #raw_input().strip()
+            serialNumber = raw_input(colored("Enter serial number : ","cyan"))
 	    if serialNumber == "sr": #select runid
 		print "productionrunid | productionrunname | shipdate| shipqty"
 		cursor.execute("""SELECT productionrunid,productionrunname,shipdate,shipqty FROM public.productionruns ORDER BY productionrunid""")
@@ -531,6 +533,12 @@ while(testing):
                  powerOn()
                  programBootloaders()
                  continue
+            if serialNumber == "i":
+                 print "Checking MCU internal serial number"
+                 iserial_result = target.check_iserial()
+                 if -1 in iserial_result:
+                   print colored("Check iserial failed.",'red')
+                 print "iserial: " + str(iserial_result)
             if serialNumber == "p":
                  print "Powering!!!!!!!"
                  powerOn()
