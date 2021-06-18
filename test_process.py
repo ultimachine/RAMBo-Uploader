@@ -875,13 +875,13 @@ while(testing):
                 print colored("Trying to program bootloaders again..",'yellow')
                 if programBootloaders():
                     state = "board fail"
+                time.sleep(1) #0.8
 
     elif state == "iserialcheck":
         state = "program for test"
         if check_USB_iserial is False:
+                time.sleep(1) #0.8
                 continue
-        time.sleep(1) #0.8
-
         #get iserial
         iserial = board.setISerial(targetPort)
 
@@ -921,6 +921,7 @@ while(testing):
 
         #verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + '/home/ultimachine/workspace/Einsy/stk500v2-prusa' + '/stk500v2-prusa.hex:i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
         verify2560bootloader_cmd = '/usr/bin/timeout 40 /usr/bin/avrdude -s -p m2560 -P ' + targetPort + ' -c wiring -Uflash:v:' + board.bootloader2560 + ':i -Uefuse:v:0xFF:m -Uhfuse:v:0xD0:m -Ulfuse:v:0xFF:m'
+        print "$ " + verify2560bootloader_cmd
         verify2560bootloader_process = subprocess.Popen( shlex.split( verify2560bootloader_cmd ) )
         if verify2560bootloader_process.wait():
                 print colored("2560 Bootloader Verification FAILED!! ",'red')
