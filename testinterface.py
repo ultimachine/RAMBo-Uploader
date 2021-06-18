@@ -20,7 +20,7 @@ class TestInterface():
         self.DOWN = "D"
         self.output = ""
         self._groupn = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)]
-        self.debugmode = True
+        self.debugmode = False
          
     def open(self, port):
         if not os.path.exists(port):
@@ -101,7 +101,7 @@ class TestInterface():
         if self.waitForFinish():
             return self._find_Alphanumeric_Values()
         else:
-            return [-1]
+            return "-1"
 
     def initSpiflash(self):
         """Returns archim spiflash mfg id"""
